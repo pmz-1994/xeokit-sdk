@@ -9,7 +9,7 @@ import {
     LinearMipMapLinearFilter,
     LinearMipMapNearestFilter, MirroredRepeatWrapping, NearestFilter,
     NearestMipMapLinearFilter, NearestMipMapNearestFilter, RepeatWrapping, sRGBEncoding
-} from "../constants/constants";
+} from "../constants/constants.js";
 
 function ensureImageSizePowerOfTwo(image) {
     if (!isPowerOfTwo(image.width) || !isPowerOfTwo(image.height)) {
@@ -52,7 +52,7 @@ function nextHighestPowerOfTwo(x) {
  * with {@link PhongMaterial#diffuseMap} and {@link PhongMaterial#specularMap}. The {@link Texture} pixel colors directly
  * provide the diffuse and specular components for each fragment across the {@link ReadableGeometry} surface.
  *
- * [[Run this example](http://xeokit.github.io/xeokit-sdk/examples/#materials_Texture)]
+ * [[Run this example](/examples/#materials_Texture)]
  *
  * ```` javascript
  * import {Viewer, Mesh, buildTorusGeometry,

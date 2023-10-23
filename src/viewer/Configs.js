@@ -10,10 +10,10 @@ import {math} from "./scene/math/math.js";
  *
  * That's OK if we know that we're not going to view models that are geographically vast, or offset far from the World coordinate origin.
  *
- * [[Run this example](http://xeokit.github.io/xeokit-sdk/examples/#Configs_disableDoublePrecisionAndRAF)]
+ * [[Run this example](/examples/#Configs_disableDoublePrecisionAndRAF)]
  *
  * ````javascript
- * import {Configs, Viewer, XKTLoaderPlugin} from "../dist/xeokit-sdk.es.js";
+ * import {Configs, Viewer, XKTLoaderPlugin} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk/dist/xeokit-sdk.es.min.js";
  *
  * // Access xeoit-sdk global configs.
  * // We typically set configs only before we create any Viewers.

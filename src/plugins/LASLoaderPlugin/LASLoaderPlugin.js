@@ -1,10 +1,13 @@
 import {utils} from "../../viewer/scene/utils.js";
-import {VBOSceneModel} from "../../viewer/scene/models/VBOSceneModel/VBOSceneModel.js";
+import {SceneModel} from "../../viewer/scene/model/index.js";
 import {Plugin} from "../../viewer/Plugin.js";
 import {LASDefaultDataSource} from "./LASDefaultDataSource.js";
-import {math} from "../../viewer";
-import {parse} from '../../../node_modules/@loaders.gl/core/dist/esm/index.js';
-import {LASLoader} from '../../../node_modules/@loaders.gl/las/dist/esm/las-loader.js';
+import {math} from "../../viewer/index.js";
+import {parse} from '@loaders.gl/core';
+import {LASLoader} from '@loaders.gl/las/dist/esm/las-loader.js';
+import {loadLASHeader} from "./loadLASHeader";
+
+const MAX_VERTICES = 500000; // TODO: Rough estimate
 
 /**
  * {@link Viewer} plugin that loads lidar point cloud geometry from LAS files.
@@ -255,7 +258,7 @@ class LASLoaderPlugin extends Plugin {
      * @param {Number|String} value Valid values are 8, 16 and "auto".
      */
     set colorDepth(value) {
-        this._colorDepth = !!value;
+        this._colorDepth = value || "auto";
     }
 
     /**
@@ -281,7 +284,7 @@ class LASLoaderPlugin extends Plugin {
             delete params.id;
         }
 
-        const sceneModel = new VBOSceneModel(this.viewer.scene, utils.apply(params, {
+        const sceneModel = new SceneModel(this.viewer.scene, utils.apply(params, {
             isModel: true
         }));
 
@@ -291,9 +294,11 @@ class LASLoaderPlugin extends Plugin {
         }
 
         const options = {
-            skip: this._skip,
-            fp64: this._fp64,
-            colorDepth: this._colorDepth
+            las: {
+                skip: this._skip,
+                fp64: this._fp64,
+                colorDepth: this._colorDepth
+            }
         };
 
         if (params.src) {
@@ -397,6 +402,9 @@ class LASLoaderPlugin extends Plugin {
             stats.numVertices = 0;
 
             try {
+
+                const lasHeader = loadLASHeader(arrayBuffer);
+
                 parse(arrayBuffer, LASLoader, options).then((parsedData) => {
 
                     const attributes = parsedData.attributes;
@@ -408,10 +416,10 @@ class LASLoaderPlugin extends Plugin {
                         reject("No positions found in file");
                         return;
                     }
-                    
+
                     let positionsValue
                     let colorsCompressed;
-                    
+
                     switch (pointsFormatId) {
                         case 0:
                             positionsValue = readPositions(attributes.POSITION);
@@ -446,18 +454,50 @@ class LASLoaderPlugin extends Plugin {
                             break;
                     }
 
-                    sceneModel.createMesh({
-                        id: "pointsMesh",
-                        primitive: "points",
-                        positions: positionsValue,
-                        colorsCompressed: colorsCompressed
-                    });
+                    const pointsChunks = chunkArray(positionsValue, MAX_VERTICES * 3);
+                    const colorsChunks = chunkArray(colorsCompressed, MAX_VERTICES * 4);
+                    const meshIds = [];
+
+                    for (let i = 0, len = pointsChunks.length; i < len; i++) {
+                        const meshId = `pointsMesh${i}`;
+                        meshIds.push(meshId);
+                        sceneModel.createMesh({
+                            id: meshId,
+                            primitive: "points",
+                            positions: pointsChunks[i],
+                            colorsCompressed: (i < colorsChunks.length) ? colorsChunks[i] : null
+                        });
+                    }
+                    /*
+                                const pointsChunks = chunkArray(positionsValue, MAX_VERTICES * 3);
+                    const colorsChunks = chunkArray(colorsCompressed, MAX_VERTICES * 4);
+                    const meshIds = [];
+
+                    for (let i = 0, len = pointsChunks.length; i < len; i++) {
+
+                        const geometryId = `geometryMesh${i}`;
+                        const meshId = `pointsMesh${i}`;
+                        meshIds.push(meshId);
+
+                        sceneModel.createGeometry({
+                            id: geometryId,
+                            primitive: "points",
+                            positions: pointsChunks[i],
+                            colorsCompressed: (i < colorsChunks.length) ? colorsChunks[i] : null
+                        });
+
+                        sceneModel.createMesh({
+                            id: meshId,
+                            geometryId
+                        });
+                    }
+                     */
 
                     const pointsObjectId = math.createUUID();
 
                     sceneModel.createEntity({
                         id: pointsObjectId,
-                        meshIds: ["pointsMesh"],
+                        meshIds,
                         isObject: true
                     });
 
@@ -471,16 +511,20 @@ class LASLoaderPlugin extends Plugin {
                             createdAt: "",
                             schema: "",
                             creatingApplication: "",
-                            metaObjects: [{
-                                id: rootMetaObjectId,
-                                name: "Model",
-                                type: "Model"
-                            }, {
-                                id: pointsObjectId,
-                                name: "PointCloud (LAS)",
-                                type: "PointCloud",
-                                parent: rootMetaObjectId
-                            }],
+                            metaObjects: [
+                                {
+                                    id: rootMetaObjectId,
+                                    name: "Model",
+                                    type: "Model"
+                                },
+                                {
+                                    id: pointsObjectId,
+                                    name: "PointCloud (LAS)",
+                                    type: "PointCloud",
+                                    parent: rootMetaObjectId,
+                                    attributes: lasHeader || {}
+                                }
+                            ],
                             propertySets: []
                         };
                         const metaModelId = sceneModel.id;
@@ -503,6 +547,17 @@ class LASLoaderPlugin extends Plugin {
             }
         });
     }
+}
+
+function chunkArray(array, chunkSize) {
+    if (chunkSize >= array.length) {
+        return array;
+    }
+    let result = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
+        result.push(array.slice(i, i + chunkSize));
+    }
+    return result;
 }
 
 export {LASLoaderPlugin};

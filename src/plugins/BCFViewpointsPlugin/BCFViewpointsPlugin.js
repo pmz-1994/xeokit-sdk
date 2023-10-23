@@ -1,7 +1,7 @@
 import {Plugin} from "../../viewer/Plugin.js";
 import {SectionPlane} from "../../viewer/scene/sectionPlane/SectionPlane.js";
-import {Bitmap} from "../../viewer/scene/Bitmap";
-import {LineSet} from "../../viewer/scene/LineSet";
+import {Bitmap} from "../../viewer/scene/Bitmap/index.js";
+import {LineSet} from "../../viewer/scene/LineSet/index.js";
 
 import {math} from "../../viewer/scene/math/math.js";
 
@@ -13,7 +13,7 @@ const tempVec3c = math.vec3();
 /**
  * {@link Viewer} plugin that saves and loads BCF viewpoints as JSON objects.
  *
- * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/BCFViewpointsPlugin.png">](http://xeokit.github.io/xeokit-sdk/examples/#BCF_SaveViewpoint)
+ * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/BCFViewpointsPlugin.png">](/examples/#BCF_SaveViewpoint)
  *
  * * [[Example 1: Saving viewer state to a BCF viewpoint](https://xeokit.github.io/xeokit-sdk/examples/#BCF_SaveViewpoint)]
  * * [[Example 2: Loading viewer state from a BCF viewpoint](https://xeokit.github.io/xeokit-sdk/examples/#BCF_LoadViewpoint)]
@@ -277,7 +277,7 @@ const tempVec3c = math.vec3();
  * });
  * ````
  *
- * [[Run an example](http://xeokit.github.io/xeokit-sdk/examples/#BCF_LoadViewpoint_defaultInvisible)]
+ * [[Run an example](/examples/#BCF_LoadViewpoint_defaultInvisible)]
  *
  * ## Behaviour with XKTLoaderPlugin globalizeObjectIds
  *
@@ -396,7 +396,9 @@ class BCFViewpointsPlugin extends Plugin {
         for (let id in sectionPlanes) {
             if (sectionPlanes.hasOwnProperty(id)) {
                 let sectionPlane = sectionPlanes[id];
-
+                if (!sectionPlane.active) {
+                    continue;
+                }
                 let location = sectionPlane.pos;
 
                 let direction;
@@ -631,7 +633,7 @@ class BCFViewpointsPlugin extends Plugin {
 
         scene.clearSectionPlanes();
 
-        if (bcfViewpoint.clipping_planes) {
+        if (bcfViewpoint.clipping_planes && bcfViewpoint.clipping_planes.length > 0) {
             bcfViewpoint.clipping_planes.forEach(function (e) {
                 let pos = xyzObjectToArray(e.location, tempVec3);
                 let dir = xyzObjectToArray(e.direction, tempVec3);
@@ -651,7 +653,7 @@ class BCFViewpointsPlugin extends Plugin {
 
         scene.clearLines();
 
-        if (bcfViewpoint.lines) {
+        if (bcfViewpoint.lines && bcfViewpoint.lines.length > 0) {
             const positions = [];
             const indices = [];
             let i = 0;
@@ -681,7 +683,7 @@ class BCFViewpointsPlugin extends Plugin {
 
         scene.clearBitmaps();
 
-        if (bcfViewpoint.bitmaps) {
+        if (bcfViewpoint.bitmaps && bcfViewpoint.bitmaps.length > 0) {
             bcfViewpoint.bitmaps.forEach(function (e) {
                 const bitmap_type = e.bitmap_type || "jpg"; // "jpg" | "png"
                 const bitmap_data = e.bitmap_data; // base64

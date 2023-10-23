@@ -338,7 +338,7 @@ class Scene extends Component {
      * @param {Viewer} viewer The Viewer this Scene belongs to.
      * @param {Object} cfg Scene configuration.
      * @param {String} [cfg.canvasId]  ID of an existing HTML canvas for the {@link Scene#canvas} - either this or canvasElement is mandatory. When both values are given, the element reference is always preferred to the ID.
-     * @param {HTMLCanvasElement} [cfg.canvasElement] Reference of an existing HTML canvas for the {@link Scene#canvas} - either this or canvasId is mandatory. When both values are given, the element reference is always preferred to the ID.
+      * @param {HTMLCanvasElement} [cfg.canvasElement] Reference of an existing HTML canvas for the {@link Scene#canvas} - either this or canvasId is mandatory. When both values are given, the element reference is always preferred to the ID.
      * @param {HTMLElement} [cfg.keyboardEventsElement] Optional reference to HTML element on which key events should be handled. Defaults to the HTML Document.
      * @throws {String} Throws an exception when both canvasId or canvasElement are missing or they aren't pointing to a valid HTMLCanvasElement.
      */
@@ -820,11 +820,12 @@ class Scene extends Component {
         this.gammaFactor = cfg.gammaFactor;
 
         this._entityOffsetsEnabled = !!cfg.entityOffsetsEnabled;
-        this._pickSurfacePrecisionEnabled = !!cfg.pickSurfacePrecisionEnabled;
         this._logarithmicDepthBufferEnabled = !!cfg.logarithmicDepthBufferEnabled;
 
+        this._dtxEnabled = (cfg.dtxEnabled !== false);
         this._pbrEnabled = !!cfg.pbrEnabled;
         this._colorTextureEnabled = (cfg.colorTextureEnabled !== false);
+        this._dtxEnabled = !!cfg.dtxEnabled;
 
         // Register Scene on xeokit
         // Do this BEFORE we add components below
@@ -997,7 +998,7 @@ class Scene extends Component {
         delete this.lineSets[lineSet.id];
         this.scene.fire("lineSetDestroyed", lineSet, true /* Don't retain event */);
     }
-    
+
     _lightDestroyed(light) {
         delete this.lights[light.id];
         this.scene._lightsState.removeLight(light._state);
@@ -1080,7 +1081,7 @@ class Scene extends Component {
         }
         this._xrayedObjectIds = null; // Lazy regenerate
         if (notify) {
-          this.fire("objectXRayed", entity, true);
+            this.fire("objectXRayed", entity, true);
         }
     }
 
@@ -1102,7 +1103,7 @@ class Scene extends Component {
         }
         this._highlightedObjectIds = null; // Lazy regenerate
         if (notify) {
-          this.fire("objectHighlighted", entity, true);
+            this.fire("objectHighlighted", entity, true);
         }
     }
 
@@ -1124,7 +1125,7 @@ class Scene extends Component {
         }
         this._selectedObjectIds = null; // Lazy regenerate
         if (notify) {
-          this.fire("objectSelected", entity, true);
+            this.fire("objectSelected", entity, true);
         }
     }
 
@@ -1223,7 +1224,7 @@ class Scene extends Component {
      * @returns {Boolean} True if precision picking is enabled.
      */
     get pickSurfacePrecisionEnabled() {
-        return this._pickSurfacePrecisionEnabled;
+        return false; // Removed
     }
 
     /**
@@ -1258,6 +1259,36 @@ class Scene extends Component {
      */
     get pbrEnabled() {
         return this._pbrEnabled;
+    }
+
+    /**
+     * Sets whether data texture scene representation (DTX) is enabled for the {@link Scene}.
+     *
+     * Even when enabled, DTX will only work if supported.
+     *
+     * Default value is ````false````.
+     *
+     * @type {Boolean}
+     */
+    set dtxEnabled(value) {
+        value = !!value;
+        if (this._dtxEnabled === value) {
+            return;
+        }
+        this._dtxEnabled = value;
+    }
+
+    /**
+     * Gets whether data texture-based scene representation (DTX) is enabled for the {@link Scene}.
+     *
+     * Even when enabled, DTX will only apply if supported.
+     *
+     * Default value is ````false````.
+     *
+     * @type {Boolean}
+     */
+    get dtxEnabled() {
+        return this._dtxEnabled;
     }
 
     /**
@@ -2163,6 +2194,22 @@ class Scene extends Component {
     }
 
     /**
+     * @param {Object} params Picking parameters.
+     * @param {Number[]} [params.canvasPos] Canvas-space coordinates. When ray-picking, this will override the **origin** and ** direction** parameters and will cause the ray to be fired through the canvas at this position, directly along the negative View-space Z-axis.
+     * @param {Number} [params.snapRadius=30] The snap radius, in canvas pixels
+     * @param {boolean} [params.snapToVertex=true] Whether to snap to vertex.
+     * @param {boolean} [params.snapToEdge=true] Whether to snap to edge.
+     */
+    snapPick(params) {
+        return this._renderer.snapPick(
+            params.canvasPos,
+            params.snapRadius || 30,
+            params.snapToVertex,
+            params.snapToEdge,
+        );
+    }
+
+    /**
      * Destroys all non-default {@link Component}s in this Scene.
      */
     clear() {
@@ -2217,7 +2264,7 @@ class Scene extends Component {
             this.lineSets[ids[i]].destroy();
         }
     }
-    
+
     /**
      * Gets the collective axis-aligned boundary (AABB) of a batch of {@link Entity}s that represent objects.
      *

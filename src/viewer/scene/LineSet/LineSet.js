@@ -1,9 +1,8 @@
 import {Component} from '../Component.js';
-import {Mesh} from "../mesh";
-import {PhongMaterial} from "../materials";
-import {math} from "../math/";
-import {worldToRTCPos} from "../math/rtcCoords.js";
-import {VBOGeometry} from "../geometry";
+import {Mesh} from "../mesh/Mesh.js";
+import {PhongMaterial} from "../materials/PhongMaterial.js";
+import {math} from "../math/math.js";
+import {VBOGeometry} from "../geometry/VBOGeometry.js";
 
 /**
  * A set of 3D line segments.
@@ -18,12 +17,12 @@ import {VBOGeometry} from "../geometry";
  * In the example below, we'll load the Schependomlaan model, then use
  * a ````LineSet```` to show a grid underneath the model.
  *
- * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/LineSet_grid.png">](http://xeokit.github.io/xeokit-sdk/examples/#LineSet_grid)
+ * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/LineSet_grid.png">](/examples/#LineSet_grid)
  *
- * [[Run this example](http://xeokit.github.io/xeokit-sdk/examples/#LineSet_grid)]
+ * [[Run this example](/examples/#LineSet_grid)]
  *
  * ````javascript
- * import {Viewer, XKTLoaderPlugin, LineSet, buildGridGeometry} from "../dist/xeokit-sdk.es.js";
+ * import {Viewer, XKTLoaderPlugin, LineSet, buildGridGeometry} from "https://cdn.jsdelivr.net/npm/@xeokit/xeokit-sdk/dist/xeokit-sdk.es.min.js";
  *
  * const viewer = new Viewer({
  *      canvasId: "myCanvas",

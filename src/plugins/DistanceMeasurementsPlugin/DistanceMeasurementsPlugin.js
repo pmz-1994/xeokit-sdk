@@ -1,6 +1,6 @@
 import {Plugin} from "../../viewer/Plugin.js";
 import {DistanceMeasurement} from "./DistanceMeasurement.js";
-import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
+import {DistanceMeasurementsMouseControl} from "./DistanceMeasurementsMouseControl.js";
 
 /**
  * {@link Viewer} plugin for measuring point-to-point distances.
@@ -9,7 +9,7 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  *
  * * [[Example 1: Model with distance measurements](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_modelWithMeasurements)]
  * * [[Example 2: Create distance measurements with mouse](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_createWithMouse)]
- * * [[Example 3: Configuring units and scale](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_unitsAndScale)]
+ * * [[Example 3: Configuring units and scale](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_unitsAndScale)
  *
  * ## Overview
  *
@@ -17,7 +17,7 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  * * As shown on the screen capture above, a DistanceMeasurement has one wire (light blue) that shows the direct point-to-point measurement,
  * and three more wires (red, green and blue) that show the distance on each of the World-space X, Y and Z axis.
  * * Create DistanceMeasurements programmatically with {@link DistanceMeasurementsPlugin#createMeasurement}.
- * * Create DistanceMeasurements interactively using the {@link DistanceMeasurementsControl}, located at {@link DistanceMeasurementsPlugin#control}.
+ * * Create DistanceMeasurements interactively using a {@link DistanceMeasurementsControl}.
  * * Existing DistanceMeasurements are registered by ID in {@link DistanceMeasurementsPlugin#measurements}.
  * * Destroy DistanceMeasurements using {@link DistanceMeasurementsPlugin#destroyMeasurement}.
  * * Configure global measurement units and scale via {@link Metrics}, located at {@link Scene#metrics}.
@@ -29,7 +29,7 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  * Note how each DistanceMeasurement has ````origin```` and ````target```` endpoints, which each indicate a 3D World-space
  * position on the surface of an {@link Entity}. The endpoints can be attached to the same Entity, or to different Entitys.
  *
- * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_modelWithMeasurements)]
+ * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/measurements/#distance_modelWithMeasurements)]
  *
  * ````JavaScript
  * import {Viewer, XKTLoaderPlugin, DistanceMeasurementsPlugin} from "xeokit-sdk.es.js";
@@ -83,20 +83,21 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  * });
  * ````
  *
- * ## Example 2: Creating DistanceMeasurements Interactively
+ * ## Example 2: Creating DistanceMeasurements with Mouse Input
  *
- * In our second example, we'll use an {@link XKTLoaderPlugin} to load a model, then we'll use the DistanceMeasurementPlugin's {@link DistanceMeasurementsControl} to interactively create {@link DistanceMeasurement}s with mouse or touch input.
+ * In our second example, we'll use an {@link XKTLoaderPlugin} to load a model, then we'll use a
+ * {@link DistanceMeasurementsMouseControl} to interactively create {@link DistanceMeasurement}s with mouse input.
  *
- * After we've activated the DistanceMeasurementsControl, the first click on any {@link Entity} begins constructing a DistanceMeasurement, fixing its
+ * After we've activated the DistanceMeasurementsMouseControl, the first click on any {@link Entity} begins constructing a DistanceMeasurement, fixing its
  * origin to that Entity. The next click on any Entity will complete the DistanceMeasurement, fixing its target to that second Entity.
  *
- * The DistanceMeasurementControl will then wait for the next click on any Entity, to begin constructing
+ * The DistanceMeasurementsMouseControl will then wait for the next click on any Entity, to begin constructing
  * another DistanceMeasurement, and so on, until deactivated again.
  *
- * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_createWithMouse)]
+ * [[Run example](/examples/measurement/#distance_createWithMouse)]
  *
  * ````JavaScript
- * import {Viewer, XKTLoaderPlugin, DistanceMeasurementsPlugin} from "xeokit-sdk.es.js";
+ * import {Viewer, XKTLoaderPlugin, DistanceMeasurementsPlugin, DistanceMeasurementsMouseControl, PointerLens} from "xeokit-sdk.es.js";
  *
  * const viewer = new Viewer({
  *     canvasId: "myCanvas",
@@ -111,11 +112,18 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  *
  * const distanceMeasurements = new DistanceMeasurementsPlugin(viewer);
  *
+ * const distanceMeasurementsControl  = new DistanceMeasurementsMouseControl(distanceMeasurements, {
+ *     pointerLens : new PointerLens(viewer)
+ * })
+ *
+ * distanceMeasurementsControl.snapToVertex = true;
+ * distanceMeasurementsControl.snapToEdge = true;
+ *
+ * distanceMeasurementsControl.activate();
+ *
  * const model = xktLoader.load({
  *     src: "./models/xkt/duplex/duplex.xkt"
  * });
- *
- * distanceMeasurements.control.activate();  // <------------ Activate the DistanceMeasurementsControl
  * ````
  *
  * ## Example 3: Configuring Measurement Units and Scale
@@ -132,6 +140,87 @@ import {DistanceMeasurementsControl} from "./DistanceMeasurementsControl.js";
  * metrics.units = "meters";
  * metrics.scale = 10.0;
  * ````
+ *
+ * ## Example 4: Attaching Mouse Handlers
+ *
+ * In our fourth example, we'll attach event handlers to our plugin, to catch when the user
+ * hovers or right-clicks over our measurements.
+ *
+ * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/#measurements_distance_modelWithMeasurements)]
+ *
+ * ````javascript
+ * import {Viewer, XKTLoaderPlugin, DistanceMeasurementsPlugin, DistanceMeasurementsMouseControl, PointerLens} from "xeokit-sdk.es.js";
+ *
+ * const viewer = new Viewer({
+ *     canvasId: "myCanvas",
+ *     transparent: true
+ * });
+ *
+ * viewer.scene.camera.eye = [-2.37, 18.97, -26.12];
+ * viewer.scene.camera.look = [10.97, 5.82, -11.22];
+ * viewer.scene.camera.up = [0.36, 0.83, 0.40];
+ *
+ * const xktLoader = new XKTLoaderPlugin(viewer);
+ *
+ * const distanceMeasurements = new DistanceMeasurementsPlugin(viewer);
+ *
+ * const distanceMeasurementsControl  = new DistanceMeasurementsMouseControl(distanceMeasurements, {
+ *     pointerLens : new PointerLens(viewer)
+ * })
+ *
+ * distanceMeasurementsControl.snapToVertex = true;
+ * distanceMeasurementsControl.snapToEdge = true;
+ *
+ * distanceMeasurementsControl.activate();
+ *
+ * distanceMeasurements.on("mouseOver", (e) => {
+ *     e.measurement.setHighlighted(true);
+ * });
+ *
+ * distanceMeasurements.on("mouseLeave", (e) => {
+ *     e.measurement.setHighlighted(false);
+ * });
+ *
+ * distanceMeasurements.on("contextMenu", (e) => {
+ *     // Show context menu
+ *     e.event.preventDefault();
+ * });
+ *
+ * const model = xktLoader.load({
+ *      src: "Duplex.xkt"
+ * });
+ *
+ * model.on("loaded", () => {
+ *
+ *      const myMeasurement1 = distanceMeasurements.createMeasurement({
+ *          id: "distanceMeasurement1",
+ *          origin: {
+ *              entity: viewer.scene.objects["2O2Fr$t4X7Zf8NOew3FLOH"],
+ *              worldPos: [0.044, 5.998, 17.767]
+ *          },
+ *          target: {
+ *              entity: viewer.scene.objects["2O2Fr$t4X7Zf8NOew3FLOH"],
+ *              worldPos: [4.738, 3.172, 17.768]
+ *          },
+ *          visible: true,
+ *          wireVisible: true
+ *      });
+ *
+ *      const myMeasurement2 = distanceMeasurements.createMeasurement({
+ *          id: "distanceMeasurement2",
+ *          origin: {
+ *              entity: viewer.scene.objects["2O2Fr$t4X7Zf8NOew3FNr2"],
+ *              worldPos: [0.457, 2.532, 17.766]
+ *          },
+ *          target: {
+ *              entity: viewer.scene.objects["1CZILmCaHETO8tf3SgGEXu"],
+ *              worldPos: [0.436, 0.001, 22.135]
+ *          },
+ *          visible: true,
+ *          wireVisible: true
+ *      });
+ * });
+ * ````
  */
 class DistanceMeasurementsPlugin extends Plugin {
 
@@ -146,18 +235,24 @@ class DistanceMeasurementsPlugin extends Plugin {
      * @param {boolean} [cfg.defaultOriginVisible=true] The default value of the DistanceMeasurements `originVisible` property.
      * @param {boolean} [cfg.defaultTargetVisible=true] The default value of the DistanceMeasurements `targetVisible` property.
      * @param {boolean} [cfg.defaultWireVisible=true] The default value of the DistanceMeasurements `wireVisible` property.
+     * @param {boolean} [cfg.defaultLabelsVisible=true] The default value of the DistanceMeasurements `labelsVisible` property.
      * @param {boolean} [cfg.defaultAxisVisible=true] The default value of the DistanceMeasurements `axisVisible` property.
-     * @param {boolean} [cfg.defaultAxisEnabled=true] The default value of the DistanceMeasurements `axisVisible` property.
+     * @param {boolean} [cfg.defaultXAxisVisible=true] The default value of the DistanceMeasurements `xAxisVisible` property.
+     * @param {boolean} [cfg.defaultYAxisVisible=true] The default value of the DistanceMeasurements `yAxisVisible` property.
+     * @param {boolean} [cfg.defaultZAxisVisible=true] The default value of the DistanceMeasurements `zAxisVisible` property.
      * @param {string} [cfg.defaultColor=#00BBFF] The default color of the length dots, wire and label.
      * @param {number} [cfg.zIndex] If set, the wires, dots and labels will have this zIndex (+1 for dots and +2 for labels).
+     * @param {PointerCircle} [cfg.pointerLens] A PointerLens to help the user position the pointer. This can be shared with other plugins.
      */
     constructor(viewer, cfg = {}) {
 
         super("DistanceMeasurements", viewer);
 
+        this._pointerLens = cfg.pointerLens;
+
         this._container = cfg.container || document.body;
 
-        this._control = new DistanceMeasurementsControl(this);
+        this._defaultControl = null;
 
         this._measurements = {};
 
@@ -167,9 +262,48 @@ class DistanceMeasurementsPlugin extends Plugin {
         this.defaultOriginVisible = cfg.defaultOriginVisible !== false;
         this.defaultTargetVisible = cfg.defaultTargetVisible !== false;
         this.defaultWireVisible = cfg.defaultWireVisible !== false;
+        this.defaultLabelsVisible = cfg.defaultLabelsVisible !== false;
         this.defaultAxisVisible = cfg.defaultAxisVisible !== false;
+        this.defaultXAxisVisible = cfg.defaultXAxisVisible !== false;
+        this.defaultYAxisVisible = cfg.defaultYAxisVisible !== false;
+        this.defaultZAxisVisible = cfg.defaultZAxisVisible !== false;
         this.defaultColor = cfg.defaultColor !== undefined ? cfg.defaultColor : "#00BBFF";
         this.zIndex = cfg.zIndex || 10000;
+
+        this._onMouseOver = (event, measurement) => {
+            this.fire("mouseOver", {
+                plugin: this,
+                distanceMeasurement: measurement,
+                measurement,
+                event
+            });
+        }
+
+        this._onMouseLeave = (event, measurement) => {
+            this.fire("mouseLeave", {
+                plugin: this,
+                distanceMeasurement: measurement,
+                measurement,
+                event
+            });
+        };
+
+        this._onContextMenu = (event, measurement) => {
+            this.fire("contextMenu", {
+                plugin: this,
+                distanceMeasurement: measurement,
+                measurement,
+                event
+            });
+        };
+    }
+
+    /**
+     * Gets the plugin's HTML container element, if any.
+     * @returns {*|HTMLElement|HTMLElement}
+     */
+    getContainerElement() {
+        return this._container;
     }
 
     /**
@@ -180,12 +314,24 @@ class DistanceMeasurementsPlugin extends Plugin {
     }
 
     /**
-     * Gets the {@link DistanceMeasurementsControl}, which creates {@link DistanceMeasurement}s from user input.
+     * Gets the PointerLens attached to this DistanceMeasurementsPlugin.
+     * @returns {PointerCircle}
+     */
+    get pointerLens() {
+        return this._pointerLens;
+    }
+
+    /**
+     * Gets the default {@link DistanceMeasurementsControl}.
      *
      * @type {DistanceMeasurementsControl}
+     * @deprecated
      */
     get control() {
-        return this._control;
+        if (!this._defaultControl) {
+            this._defaultControl = new DistanceMeasurementsMouseControl(this, {});
+        }
+        return this._defaultControl;
     }
 
     /**
@@ -240,6 +386,10 @@ class DistanceMeasurementsPlugin extends Plugin {
      * @param {Boolean} [params.targetVisible=true] Whether to initially show the {@link DistanceMeasurement} target.
      * @param {Boolean} [params.wireVisible=true] Whether to initially show the direct point-to-point wire between {@link DistanceMeasurement#origin} and {@link DistanceMeasurement#target}.
      * @param {Boolean} [params.axisVisible=true] Whether to initially show the axis-aligned wires between {@link DistanceMeasurement#origin} and {@link DistanceMeasurement#target}.
+     * @param {Boolean} [params.xAxisVisible=true] Whether to initially show the X-axis-aligned wires between {@link DistanceMeasurement#origin} and {@link DistanceMeasurement#target}.
+     * @param {Boolean} [params.yAxisVisible=true] Whether to initially show the Y-axis-aligned wires between {@link DistanceMeasurement#origin} and {@link DistanceMeasurement#target}.
+     * @param {Boolean} [params.zAxisVisible=true] Whether to initially show the Z-axis-aligned wires between {@link DistanceMeasurement#origin} and {@link DistanceMeasurement#target}.
+     * @param {Boolean} [params.labelsVisible=true] Whether to initially show the labels.
      * @param {string} [params.color] The color of the length dot, wire and label.
      * @returns {DistanceMeasurement} The new {@link DistanceMeasurement}.
      */
@@ -265,9 +415,16 @@ class DistanceMeasurementsPlugin extends Plugin {
             visible: params.visible,
             wireVisible: params.wireVisible,
             axisVisible: params.axisVisible !== false && this.defaultAxisVisible !== false,
+            xAxisVisible: params.xAxisVisible !== false && this.defaultXAxisVisible !== false,
+            yAxisVisible: params.yAxisVisible !== false && this.defaultYAxisVisible !== false,
+            zAxisVisible: params.zAxisVisible !== false && this.defaultZAxisVisible !== false,
+            labelsVisible: params.labelsVisible !== false && this.defaultLabelsVisible !== false,
             originVisible: params.originVisible,
             targetVisible: params.targetVisible,
-            color: params.color
+            color: params.color,
+            onMouseOver: this._onMouseOver,
+            onMouseLeave: this._onMouseLeave,
+            onContextMenu: this._onContextMenu
         });
         this._measurements[measurement.id] = measurement;
         measurement.on("destroyed", () => {
@@ -290,6 +447,38 @@ class DistanceMeasurementsPlugin extends Plugin {
         }
         measurement.destroy();
         this.fire("measurementDestroyed", measurement);
+    }
+
+    /**
+     * Shows all or hides the angle label of each {@link DistanceMeasurement}.
+     *
+     * @param {Boolean} labelsShown Whether or not to show the labels.
+     */
+    setLabelsShown(labelsShown) {
+        for (const [key, measurement] of Object.entries(this.measurements)) {
+            measurement.labelShown = labelsShown;
+        }
+    }
+
+    /**
+     * Shows all or hides the axis wires of each {@link DistanceMeasurement}.
+     *
+     * @param {Boolean} labelsShown Whether or not to show the axis wires.
+     */
+    setAxisVisible(axisVisible) {
+        for (const [key, measurement] of Object.entries(this.measurements)) {
+            measurement.axisVisible = axisVisible;
+        }
+        this.defaultAxisVisible = axisVisible;
+    }
+
+    /**
+     * Gets if the axis wires of each {@link DistanceMeasurement} are visible.
+     *
+     * @returns {Boolean} Whether or not the axis wires are visible.
+     */
+    getAxisVisible() {
+        return this.defaultAxisVisible;
     }
 
     /**

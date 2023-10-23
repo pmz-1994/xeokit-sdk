@@ -1,10 +1,9 @@
 import {Component} from '../Component.js';
-import {Mesh} from "../mesh";
-import {Node} from "../nodes";
-import {PhongMaterial, Texture} from "../materials";
-import {buildPlaneGeometry, ReadableGeometry} from "../geometry";
-import {math} from "../math/";
-import {worldToRTCPos} from "../math/rtcCoords.js";
+import {Mesh} from "../mesh/Mesh.js";
+import {Node} from "../nodes/Node.js";
+import {PhongMaterial, Texture} from "../materials/index.js";
+import {buildPlaneGeometry, ReadableGeometry} from "../geometry/index.js";
+import {math} from "../math/math.js";
 
 /**
  *  A plane-shaped 3D object containing a bitmap image.
@@ -18,9 +17,9 @@ import {worldToRTCPos} from "../math/rtcCoords.js";
  * In the example below, we'll load the Schependomlaan model, then use
  * an ````Bitmap```` to show a storey plan next to the model.
  *
- * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/Bitmap_storeyPlan.png">](http://xeokit.github.io/xeokit-sdk/examples/#Bitmap_storeyPlan)
+ * [<img src="http://xeokit.github.io/xeokit-sdk/assets/images/Bitmap_storeyPlan.png">](/examples/#Bitmap_storeyPlan)
  *
- * [[Run this example](http://xeokit.github.io/xeokit-sdk/examples/#Bitmap_grid)]
+ * [[Run this example](/examples/#Bitmap_grid)]
  *
  * ````javascript
  * import {Viewer, Bitmap, XKTLoaderPlugin} from "xeokit-sdk.es.js";

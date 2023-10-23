@@ -1,74 +1,189 @@
 [
   {
-    "name": "LinesBatchingLayer#createPortion",
-    "filePath": "src/viewer/scene/models/VBOSceneModel/lib/layers/linesBatching/LinesBatchingLayer.js",
+    "name": "DistanceMeasurementsPlugin#setAxisVisible",
+    "filePath": "src/plugins/DistanceMeasurementsPlugin/DistanceMeasurementsPlugin.js",
     "lines": [
       {
-        "lineNumber": 105,
+        "lineNumber": 462,
         "line": "    /**"
       },
       {
-        "lineNumber": 106,
-        "line": "     * Creates a new portion within this LinesBatchingLayer, returns the new portion ID."
+        "lineNumber": 463,
+        "line": "     * Shows all or hides the axis wires of each {@link DistanceMeasurement}."
       },
       {
-        "lineNumber": 107,
+        "lineNumber": 464,
         "line": "     *"
       },
       {
-        "lineNumber": 108,
-        "line": "     * Gives the portion the specified geometry, color and matrix."
+        "lineNumber": 465,
+        "line": "     * @param {Boolean} labelsShown Whether or not to show the axis wires."
       },
       {
-        "lineNumber": 109,
-        "line": "     *"
-      },
-      {
-        "lineNumber": 110,
-        "line": "     * @param cfg.positions Flat float Local-space positions array."
-      },
-      {
-        "lineNumber": 111,
-        "line": "     * @param cfg.positionsCompressed Flat quantized positions array - decompressed with TrianglesBatchingLayer positionsDecodeMatrix"
-      },
-      {
-        "lineNumber": 112,
-        "line": "     * @param cfg.indices  Flat int indices array."
-      },
-      {
-        "lineNumber": 113,
-        "line": "     * @param cfg.color Quantized RGB color [0..255,0..255,0..255,0..255]"
-      },
-      {
-        "lineNumber": 114,
-        "line": "     * @param cfg.opacity Opacity [0..255]"
-      },
-      {
-        "lineNumber": 115,
-        "line": "     * @param [cfg.meshMatrix] Flat float 4x4 matrix"
-      },
-      {
-        "lineNumber": 116,
-        "line": "     * @param [cfg.worldMatrix] Flat float 4x4 matrix"
-      },
-      {
-        "lineNumber": 117,
-        "line": "     * @param cfg.worldAABB Flat float AABB World-space AABB"
-      },
-      {
-        "lineNumber": 118,
-        "line": "     * @param cfg.pickColor Quantized pick color"
-      },
-      {
-        "lineNumber": 119,
-        "line": "     * @returns {number} Portion ID"
-      },
-      {
-        "lineNumber": 120,
+        "lineNumber": 466,
         "line": "     */"
       },
       {
-        "lineNumber": 121,
+        "lineNumber": 467,
+        "line": "    setAxisVisible(axisVisible) {"
+      }
+    ],
+    "codeParams": [
+      "axisVisible"
+    ],
+    "docParams": [
+      "labelsShown"
+    ]
+  },
+  {
+    "name": "MetaModel#loadData",
+    "filePath": "src/viewer/metadata/MetaModel.js",
+    "lines": [
+      {
+        "lineNumber": 156,
+        "line": "    /**"
+      },
+      {
+        "lineNumber": 157,
+        "line": "     * Load metamodel data into this MetaModel."
+      },
+      {
+        "lineNumber": 158,
+        "line": "     * @param metaModelData"
+      },
+      {
+        "lineNumber": 159,
+        "line": "     */"
+      },
+      {
+        "lineNumber": 160,
+        "line": "    loadData(metaModelData, options = {}) {"
+      }
+    ],
+    "codeParams": [
+      "metaModelData",
+      "options"
+    ],
+    "docParams": [
+      "metaModelData"
+    ]
+  },
+  {
+    "name": "DataTextureGenerator#generateTextureForObjectOffsets",
+    "filePath": "src/viewer/scene/model/dtx/triangles/DataTextureGenerator.js",
+    "lines": [
+      {
+        "lineNumber": 129,
+        "line": "    /**"
+      },
+      {
+        "lineNumber": 130,
+        "line": "     * This will generate a texture for all object offsets."
+      },
+      {
+        "lineNumber": 131,
+        "line": "     *"
+      },
+      {
+        "lineNumber": 132,
+        "line": "     * @param {WebGL2RenderingContext} gl"
+      },
+      {
+        "lineNumber": 133,
+        "line": "     * @param {int[]} offsets Array of int[3], one XYZ offset array for each object"
+      },
+      {
+        "lineNumber": 134,
+        "line": "     *"
+      },
+      {
+        "lineNumber": 135,
+        "line": "     * @returns {BindableDataTexture}"
+      },
+      {
+        "lineNumber": 136,
+        "line": "     */"
+      },
+      {
+        "lineNumber": 137,
+        "line": "    generateTextureForObjectOffsets(gl, numOffsets) {"
+      }
+    ],
+    "codeParams": [
+      "gl",
+      "numOffsets"
+    ],
+    "docParams": [
+      "gl",
+      "offsets"
+    ]
+  },
+  {
+    "name": "LinesBatchingLayer#createPortion",
+    "filePath": "src/viewer/scene/model/vbo/linesBatching/LinesBatchingLayer.js",
+    "lines": [
+      {
+        "lineNumber": 104,
+        "line": "    /**"
+      },
+      {
+        "lineNumber": 105,
+        "line": "     * Creates a new portion within this LinesBatchingLayer, returns the new portion ID."
+      },
+      {
+        "lineNumber": 106,
+        "line": "     *"
+      },
+      {
+        "lineNumber": 107,
+        "line": "     * Gives the portion the specified geometry, color and matrix."
+      },
+      {
+        "lineNumber": 108,
+        "line": "     *"
+      },
+      {
+        "lineNumber": 109,
+        "line": "     * @param cfg.positions Flat float Local-space positions array."
+      },
+      {
+        "lineNumber": 110,
+        "line": "     * @param cfg.positionsCompressed Flat quantized positions array - decompressed with TrianglesBatchingLayer positionsDecodeMatrix"
+      },
+      {
+        "lineNumber": 111,
+        "line": "     * @param cfg.indices  Flat int indices array."
+      },
+      {
+        "lineNumber": 112,
+        "line": "     * @param cfg.color Quantized RGB color [0..255,0..255,0..255,0..255]"
+      },
+      {
+        "lineNumber": 113,
+        "line": "     * @param cfg.opacity Opacity [0..255]"
+      },
+      {
+        "lineNumber": 114,
+        "line": "     * @param [cfg.meshMatrix] Flat float 4x4 matrix"
+      },
+      {
+        "lineNumber": 115,
+        "line": "     * @param cfg.worldAABB Flat float AABB World-space AABB"
+      },
+      {
+        "lineNumber": 116,
+        "line": "     * @param cfg.pickColor Quantized pick color"
+      },
+      {
+        "lineNumber": 117,
+        "line": "     * @returns {number} Portion ID"
+      },
+      {
+        "lineNumber": 118,
+        "line": "     */"
+      },
+      {
+        "lineNumber": 119,
         "line": "    createPortion(cfg) {"
       }
     ],
@@ -79,74 +194,70 @@
   },
   {
     "name": "PointsBatchingLayer#createPortion",
-    "filePath": "src/viewer/scene/models/VBOSceneModel/lib/layers/pointsBatching/PointsBatchingLayer.js",
+    "filePath": "src/viewer/scene/model/vbo/pointsBatching/PointsBatchingLayer.js",
     "lines": [
       {
-        "lineNumber": 114,
+        "lineNumber": 113,
         "line": "    /**"
       },
       {
-        "lineNumber": 115,
+        "lineNumber": 114,
         "line": "     * Creates a new portion within this PointsBatchingLayer, returns the new portion ID."
       },
       {
-        "lineNumber": 116,
+        "lineNumber": 115,
         "line": "     *"
       },
       {
-        "lineNumber": 117,
+        "lineNumber": 116,
         "line": "     * Gives the portion the specified geometry, color and matrix."
       },
       {
-        "lineNumber": 118,
+        "lineNumber": 117,
         "line": "     *"
       },
       {
-        "lineNumber": 119,
+        "lineNumber": 118,
         "line": "     * @param cfg.positions Flat float Local-space positions array."
       },
       {
-        "lineNumber": 120,
+        "lineNumber": 119,
         "line": "     * @param cfg.positionsCompressed Flat quantized positions array - decompressed with PointsBatchingLayer positionsDecodeMatrix"
       },
       {
-        "lineNumber": 121,
+        "lineNumber": 120,
         "line": "     * @param [cfg.colorsCompressed] Quantized RGB colors [0..255,0..255,0..255,0..255]"
       },
       {
-        "lineNumber": 122,
+        "lineNumber": 121,
         "line": "     * @param [cfg.colors] Flat float colors array."
       },
       {
-        "lineNumber": 123,
+        "lineNumber": 122,
         "line": "     * @param cfg.color Float RGB color [0..1,0..1,0..1]"
       },
       {
-        "lineNumber": 124,
+        "lineNumber": 123,
         "line": "     * @param [cfg.meshMatrix] Flat float 4x4 matrix"
       },
       {
-        "lineNumber": 125,
-        "line": "     * @param [cfg.worldMatrix] Flat float 4x4 matrix"
-      },
-      {
-        "lineNumber": 126,
+        "lineNumber": 124,
         "line": "     * @param cfg.worldAABB Flat float AABB World-space AABB"
       },
       {
-        "lineNumber": 127,
+        "lineNumber": 125,
         "line": "     * @param cfg.pickColor Quantized pick color"
       },
       {
-        "lineNumber": 128,
+        "lineNumber": 126,
         "line": "     * @returns {number} Portion ID"
       },
       {
-        "lineNumber": 129,
+        "lineNumber": 127,
         "line": "     */"
       },
       {
-        "lineNumber": 130,
+        "lineNumber": 128,
         "line": "    createPortion(cfg) {"
       }
     ],
@@ -157,7 +268,7 @@
   },
   {
     "name": "TrianglesBatchingLayer#createPortion",
-    "filePath": "src/viewer/scene/models/VBOSceneModel/lib/layers/trianglesBatching/TrianglesBatchingLayer.js",
+    "filePath": "src/viewer/scene/model/vbo/trianglesBatching/TrianglesBatchingLayer.js",
     "lines": [
       {
         "lineNumber": 157,
@@ -237,26 +348,22 @@
       },
       {
         "lineNumber": 176,
-        "line": "     * @param [cfg.worldMatrix] Flat float 4x4 matrix"
-      },
-      {
-        "lineNumber": 177,
         "line": "     * @param cfg.worldAABB Flat float AABB World-space AABB"
       },
       {
-        "lineNumber": 178,
+        "lineNumber": 177,
         "line": "     * @param cfg.pickColor Quantized pick color"
       },
       {
-        "lineNumber": 179,
+        "lineNumber": 178,
         "line": "     * @returns {number} Portion ID"
       },
       {
-        "lineNumber": 180,
+        "lineNumber": 179,
         "line": "     */"
       },
       {
-        "lineNumber": 181,
+        "lineNumber": 180,
         "line": "    createPortion(cfg) {"
       }
     ],

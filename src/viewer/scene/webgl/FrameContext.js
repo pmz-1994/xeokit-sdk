@@ -219,12 +219,57 @@ class FrameContext {
          */
         this.pickInvisible = false;
 
+        /**
+         * Used to draw only requested elements / indices.
+         *
+         * @property pickElementsCount
+         * @type {Number}
+         */
+        this.pickElementsCount = null;
+
+        /**
+         * Used to draw only requested elements / indices.
+         *
+         * @property pickElementsOffset
+         * @type {Number}
+         */
+        this.pickElementsOffset = null;
+
         /** The current line width.
          *
          * @property lineWidth
          * @type Number
          */
         this.lineWidth = 1;
+
+        /**
+         * Collects info from SceneModel.drawSnapInitDepthBuf and SceneModel.drawSnapDepths,
+         * which is then used in Renderer to determine snap-picking results.
+         *
+         * @type {{}}
+         */
+        this.snapPickLayerParams = {};
+
+        /**
+         * Collects info from SceneModel.drawSnapInitDepthBuf and SceneModel.drawSnapDepths,
+         * which is then used in Renderer to determine snap-picking results.
+         * @type {number}
+         */
+        this.snapPickLayerNumber = 0;
+
+        /**
+         * Collects info from SceneModel.drawSnapInitDepthBuf and SceneModel.drawSnapDepths,
+         * which is then used in Renderer to determine snap-picking results.
+         * @type {Number[]}
+         */
+        this.snapPickCoordinateScale = math.vec3();
+
+        /**
+         * Collects info from SceneModel.drawSnapInitDepthBuf and SceneModel.drawSnapDepths,
+         * which is then used in Renderer to determine snap-picking results.
+         * @type {Number[]}
+         */
+        this.snapPickOrigin = math.vec3();
     }
 
     /**
