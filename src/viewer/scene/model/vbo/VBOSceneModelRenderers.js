@@ -13,6 +13,9 @@ const tempVec3a = math.vec3();
 const tempVec3c = math.vec3();
 const tempMat4a = math.mat4();
 
+/**
+ * @private
+ */
 class VBOSceneModelRenderer {
     constructor(scene, withSAO = false, {instancing = false, edges = false} = {}) {
         this._scene = scene;
@@ -108,31 +111,37 @@ class VBOSceneModelRenderer {
         const {gl} = scene.canvas;
         const {model, layerIndex} = layer;
 
+        const numAllocatedSectionPlanes = scene._sectionPlanesState.getNumAllocatedSectionPlanes();
         const numSectionPlanes = scene._sectionPlanesState.sectionPlanes.length;
-        if (numSectionPlanes > 0) {
+        if (numAllocatedSectionPlanes > 0) {
             const sectionPlanes = scene._sectionPlanesState.sectionPlanes;
             const baseIndex = layerIndex * numSectionPlanes;
             const renderFlags = model.renderFlags;
-            for (let sectionPlaneIndex = 0; sectionPlaneIndex < numSectionPlanes; sectionPlaneIndex++) {
+            for (let sectionPlaneIndex = 0; sectionPlaneIndex < numAllocatedSectionPlanes; sectionPlaneIndex++) {
                 const sectionPlaneUniforms = this._uSectionPlanes[sectionPlaneIndex];
                 if (sectionPlaneUniforms) {
-                    const active = renderFlags.sectionPlanesActivePerLayer[baseIndex + sectionPlaneIndex];
-                    gl.uniform1i(sectionPlaneUniforms.active, active ? 1 : 0);
-                    if (active) {
-                        const sectionPlane = sectionPlanes[sectionPlaneIndex];
-                        const origin = layer._state.origin;
-                        if (origin) {
-                            const rtcSectionPlanePos = getPlaneRTCPos(sectionPlane.dist, sectionPlane.dir, origin, tempVec3a);
-                            gl.uniform3fv(sectionPlaneUniforms.pos, rtcSectionPlanePos);
-                        } else {
-                            gl.uniform3fv(sectionPlaneUniforms.pos, sectionPlane.pos);
+                    if (sectionPlaneIndex < numSectionPlanes) {
+                        const active = renderFlags.sectionPlanesActivePerLayer[baseIndex + sectionPlaneIndex];
+                        gl.uniform1i(sectionPlaneUniforms.active, active ? 1 : 0);
+                        if (active) {
+                            const sectionPlane = sectionPlanes[sectionPlaneIndex];
+                            const origin = layer._state.origin;
+                            if (origin) {
+                                const rtcSectionPlanePos = getPlaneRTCPos(sectionPlane.dist, sectionPlane.dir, origin, tempVec3a);
+                                gl.uniform3fv(sectionPlaneUniforms.pos, rtcSectionPlanePos);
+                            } else {
+                                gl.uniform3fv(sectionPlaneUniforms.pos, sectionPlane.pos);
+                            }
+                            gl.uniform3fv(sectionPlaneUniforms.dir, sectionPlane.dir);
                         }
-                        gl.uniform3fv(sectionPlaneUniforms.dir, sectionPlane.dir);
+                    } else {
+                        gl.uniform1i(sectionPlaneUniforms.active, 0);
                     }
                 }
             }
         }
     }
+
 
     _allocate() {
         const scene = this._scene;
@@ -214,7 +223,7 @@ class VBOSceneModelRenderer {
 
         this._uSectionPlanes = [];
 
-        for (let i = 0, len = scene._sectionPlanesState.sectionPlanes.length; i < len; i++) {
+        for (let i = 0, len = scene._sectionPlanesState.getNumAllocatedSectionPlanes(); i < len; i++) {
             this._uSectionPlanes.push({
                 active: program.getLocation("sectionPlaneActive" + i),
                 pos: program.getLocation("sectionPlanePos" + i),
@@ -242,6 +251,9 @@ class VBOSceneModelRenderer {
         this._uAOMap = "uAOMap";
 
         if (this._instancing) {
+
+            this._aModelMatrix = program.getAttribute("modelMatrix");
+
             this._aModelMatrixCol0 = program.getAttribute("modelMatrixCol0");
             this._aModelMatrixCol1 = program.getAttribute("modelMatrixCol1");
             this._aModelMatrixCol2 = program.getAttribute("modelMatrixCol2");
@@ -633,6 +645,10 @@ class VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelTriangleBatchingRenderer extends VBOSceneModelRenderer {
     constructor(scene, withSAO, {instancing = false, edges = false} = {}) {
         super(scene, withSAO, {instancing, edges});
@@ -662,6 +678,10 @@ class VBOSceneModelTriangleBatchingRenderer extends VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelTriangleBatchingEdgesRenderer extends VBOSceneModelTriangleBatchingRenderer {
     constructor(scene, withSAO) {
         super(scene, withSAO, {instancing: false, edges: true});
@@ -669,8 +689,11 @@ class VBOSceneModelTriangleBatchingEdgesRenderer extends VBOSceneModelTriangleBa
 }
 
 
+/**
+ * @private
+ */
 class VBOSceneModelTriangleInstancingRenderer extends VBOSceneModelRenderer {
-    constructor(scene, withSAO, { edges = false} = {}) {
+    constructor(scene, withSAO, {edges = false} = {}) {
         super(scene, withSAO, {instancing: true, edges});
     }
 
@@ -694,12 +717,20 @@ class VBOSceneModelTriangleInstancingRenderer extends VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelTriangleInstancingEdgesRenderer extends VBOSceneModelTriangleInstancingRenderer {
     constructor(scene, withSAO) {
         super(scene, withSAO, {instancing: true, edges: true});
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelPointBatchingRenderer extends VBOSceneModelRenderer {
     _draw(drawCfg) {
         const {gl} = this._scene.canvas;
@@ -718,6 +749,10 @@ class VBOSceneModelPointBatchingRenderer extends VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelPointInstancingRenderer extends VBOSceneModelRenderer {
     constructor(scene, withSAO) {
         super(scene, withSAO, {instancing: true});
@@ -740,6 +775,10 @@ class VBOSceneModelPointInstancingRenderer extends VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelLineBatchingRenderer extends VBOSceneModelRenderer {
     _draw(drawCfg) {
         const {gl} = this._scene.canvas;
@@ -758,6 +797,10 @@ class VBOSceneModelLineBatchingRenderer extends VBOSceneModelRenderer {
     }
 }
 
+
+/**
+ * @private
+ */
 class VBOSceneModelLineInstancingRenderer extends VBOSceneModelRenderer {
     constructor(scene, withSAO) {
         super(scene, withSAO, {instancing: true});

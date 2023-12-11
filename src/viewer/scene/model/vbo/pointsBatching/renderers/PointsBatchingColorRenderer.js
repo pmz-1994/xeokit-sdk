@@ -16,7 +16,7 @@ class PointsBatchingColorRenderer extends VBOSceneModelPointBatchingRenderer {
 
         const scene = this._scene;
         const sectionPlanesState = scene._sectionPlanesState;
-        const clipping = sectionPlanesState.sectionPlanes.length > 0;
+        const clipping = sectionPlanesState.getNumAllocatedSectionPlanes() > 0;
         const pointsMaterial = scene.pointsMaterial;
         const src = [];
         src.push('#version 300 es');
@@ -88,6 +88,7 @@ class PointsBatchingColorRenderer extends VBOSceneModelPointBatchingRenderer {
         if (scene.logarithmicDepthBufferEnabled) {
             src.push("vFragDepth = 1.0 + clipPos.w;");
         }
+
         src.push("gl_Position = clipPos;");
         if (pointsMaterial.perspectivePoints) {
             src.push("gl_PointSize = (nearPlaneHeight * pointSize) / clipPos.w;");
@@ -108,7 +109,7 @@ class PointsBatchingColorRenderer extends VBOSceneModelPointBatchingRenderer {
 
         const scene = this._scene;
         const sectionPlanesState = scene._sectionPlanesState;
-        const clipping = sectionPlanesState.sectionPlanes.length > 0;
+        const clipping = sectionPlanesState.getNumAllocatedSectionPlanes() > 0;
         const src = [];
         src.push('#version 300 es');
         src.push("// Points batching color fragment shader");
@@ -127,7 +128,7 @@ class PointsBatchingColorRenderer extends VBOSceneModelPointBatchingRenderer {
         if (clipping) {
             src.push("in vec4 vWorldPosition;");
             src.push("in float vFlags;");
-            for (let i = 0, len = sectionPlanesState.sectionPlanes.length; i < len; i++) {
+            for (let i = 0, len = sectionPlanesState.getNumAllocatedSectionPlanes(); i < len; i++) {
                 src.push("uniform bool sectionPlaneActive" + i + ";");
                 src.push("uniform vec3 sectionPlanePos" + i + ";");
                 src.push("uniform vec3 sectionPlaneDir" + i + ";");
@@ -147,7 +148,7 @@ class PointsBatchingColorRenderer extends VBOSceneModelPointBatchingRenderer {
             src.push("  bool clippable = (int(vFlags) >> 16 & 0xF) == 1;");
             src.push("  if (clippable) {");
             src.push("  float dist = 0.0;");
-            for (let i = 0, len = sectionPlanesState.sectionPlanes.length; i < len; i++) {
+            for (let i = 0, len = sectionPlanesState.getNumAllocatedSectionPlanes(); i < len; i++) {
                 src.push("if (sectionPlaneActive" + i + ") {");
                 src.push("   dist += clamp(dot(-sectionPlaneDir" + i + ".xyz, vWorldPosition.xyz - sectionPlanePos" + i + ".xyz), 0.0, 1000.0);");
                 src.push("}");

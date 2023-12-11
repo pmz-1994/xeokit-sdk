@@ -176,7 +176,7 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
     _buildVertexShader() {
         const scene = this._scene;
         const sectionPlanesState = scene._sectionPlanesState;
-        const clipping = sectionPlanesState.sectionPlanes.length > 0;
+        const clipping = sectionPlanesState.getNumAllocatedSectionPlanes() > 0;
         const src = [];
         src.push ('#version 300 es');
         src.push("// SnapInstancingDepthBufInitRenderer vertex shader");
@@ -194,6 +194,7 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
         src.push("precision mediump sampler2D;");
         src.push("#endif");
         src.push("uniform int renderPass;");
+        src.push("in vec4 pickColor;");
         src.push("in vec3 position;");
         if (scene.entityOffsetsEnabled) {
             src.push("in vec3 offset;");
@@ -222,8 +223,9 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
         src.push("    float y = (clipPos.y - snapVectorA.y) * snapInvVectorAB.y;");
         src.push("    return vec2(x, y);")
         src.push("}");
+        src.push("flat out vec4 vPickColor;");
+        src.push("out vec4 vWorldPosition;");
         if (clipping) {
-            src.push("out vec4 vWorldPosition;");
             src.push("out float vFlags;");
         }
         src.push("out highp vec3 relativeToOriginPosition;");
@@ -241,15 +243,15 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
         }
         src.push("relativeToOriginPosition = worldPosition.xyz;")
         src.push("  vec4 viewPosition  = viewMatrix * worldPosition; ");
+        src.push("  vWorldPosition = worldPosition;");
         if (clipping) {
-            src.push("  vWorldPosition = worldPosition;");
             src.push("  vFlags = flags;");
         }
+        src.push("vPickColor = pickColor;");
         src.push("vec4 clipPos = projMatrix * viewPosition;");
         src.push("float tmp = clipPos.w;")
         src.push("clipPos.xyzw /= tmp;")
         src.push("clipPos.xy = remapClipPos(clipPos.xy);");
-        src.push("clipPos.z += 0.0001;"); // small Z offset
         src.push("clipPos.xyzw *= tmp;")
         if (SNAPPING_LOG_DEPTH_BUF_ENABLED) {
             src.push("vFragDepth = 1.0 + clipPos.w;");
@@ -264,7 +266,7 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
     _buildFragmentShader() {
         const scene = this._scene;
         const sectionPlanesState = scene._sectionPlanesState;
-        const clipping = sectionPlanesState.sectionPlanes.length > 0;
+        const clipping = sectionPlanesState.getNumAllocatedSectionPlanes() > 0;
         const src = [];
         src.push ('#version 300 es');
         src.push("// Points instancing pick depth fragment shader");
@@ -282,23 +284,26 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
         }
         src.push("uniform int layerNumber;");
         src.push("uniform vec3 coordinateScaler;");
+        src.push("in vec4 vWorldPosition;");
+        src.push("flat in vec4 vPickColor;");
         if (clipping) {
-            src.push("in vec4 vWorldPosition;");
             src.push("in float vFlags;");
-            for (let i = 0; i < sectionPlanesState.sectionPlanes.length; i++) {
+            for (let i = 0; i < sectionPlanesState.getNumAllocatedSectionPlanes(); i++) {
                 src.push("uniform bool sectionPlaneActive" + i + ";");
                 src.push("uniform vec3 sectionPlanePos" + i + ";");
                 src.push("uniform vec3 sectionPlaneDir" + i + ";");
             }
         }
         src.push("in highp vec3 relativeToOriginPosition;");
-        src.push("out highp ivec4 outCoords;");
+        src.push("layout(location = 0) out highp ivec4 outCoords;");
+        src.push("layout(location = 1) out highp ivec4 outNormal;");
+        src.push("layout(location = 2) out lowp uvec4 outPickColor;");
         src.push("void main(void) {");
         if (clipping) {
             src.push("  bool clippable = (int(vFlags) >> 16 & 0xF) == 1;");
             src.push("  if (clippable) {");
             src.push("  float dist = 0.0;");
-            for (let i = 0; i < sectionPlanesState.sectionPlanes.length; i++) {
+            for (let i = 0; i < sectionPlanesState.getNumAllocatedSectionPlanes(); i++) {
                 src.push("if (sectionPlaneActive" + i + ") {");
                 src.push("   dist += clamp(dot(-sectionPlaneDir" + i + ".xyz, vWorldPosition.xyz - sectionPlanePos" + i + ".xyz), 0.0, 1000.0);");
                 src.push("}");
@@ -307,9 +312,18 @@ class SnapInstancingDepthBufInitRenderer extends VBOSceneModelRenderer {
             src.push("}");
         }
         if (SNAPPING_LOG_DEPTH_BUF_ENABLED) {
-            src.push("    gl_FragDepth = isPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth ) * logDepthBufFC * 0.5;");
+            src.push("    float dx = dFdx(vFragDepth);")
+            src.push("    float dy = dFdy(vFragDepth);")
+            src.push("    float diff = sqrt(dx*dx+dy*dy);");
+            src.push("    gl_FragDepth = isPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth + diff ) * logDepthBufFC * 0.5;");
         }
         src.push("outCoords = ivec4(relativeToOriginPosition.xyz*coordinateScaler.xyz, -layerNumber);")
+
+        src.push("vec3 xTangent = dFdx( vWorldPosition.xyz );");
+        src.push("vec3 yTangent = dFdy( vWorldPosition.xyz );");
+        src.push("vec3 worldNormal = normalize( cross( xTangent, yTangent ) );");
+        src.push(`outNormal = ivec4(worldNormal * float(${math.MAX_INT}), 1.0);`);
+        src.push("outPickColor = uvec4(vPickColor);");
         src.push("}");
         return src;
     }

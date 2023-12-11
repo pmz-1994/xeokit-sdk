@@ -69,7 +69,9 @@ class PickController {
 
         this._lastPickedEntityId = null;
 
-        this._needFireEvents = false;
+        this._lastHash = null;
+
+        this._needFireEvents = 0;
     }
 
     /**
@@ -85,26 +87,29 @@ class PickController {
             return;
         }
 
+        const hash = `${~~this.pickCursorPos[0]}-${~~this.pickCursorPos[1]}-${this.scheduleSnapOrPick}-${this.schedulePickSurface}-${this.schedulePickEntity}`;
+        if (this._lastHash === hash) {
+            return;
+        }
+
         this.picked = false;
         this.pickedSurface = false;
         this.snappedOrPicked = false;
         this.hoveredSnappedOrSurfaceOff = false;
 
-        this._needFireEvents = false;
-
         const hasHoverSurfaceSubs = this._cameraControl.hasSubs("hoverSurface");
 
         if (this.scheduleSnapOrPick) {
-            const snapPickResult = this._scene.snapPick({
+            const snapPickResult = this._scene.pick({
                 canvasPos: this.pickCursorPos,
                 snapRadius: this._configs.snapRadius,
                 snapToVertex: this._configs.snapToVertex,
                 snapToEdge: this._configs.snapToEdge,
             });
-            if (snapPickResult && snapPickResult.snappedWorldPos) {
+            if (snapPickResult && (snapPickResult.snappedToEdge || snapPickResult.snappedToVertex)) {
                 this.snapPickResult = snapPickResult;
                 this.snappedOrPicked = true;
-                this._needFireEvents = true;
+                this._needFireEvents++;
             } else {
                 this.schedulePickSurface = true; // Fallback
                 this.snapPickResult = null;
@@ -117,7 +122,7 @@ class PickController {
                 if (pickResultCanvasPos[0] === this.pickCursorPos[0] && pickResultCanvasPos[1] === this.pickCursorPos[1]) {
                     this.picked = true;
                     this.pickedSurface = true;
-                    this._needFireEvents = hasHoverSurfaceSubs;
+                    this._needFireEvents += hasHoverSurfaceSubs ? 1 : 0;
                     this.schedulePickEntity = false;
                     this.schedulePickSurface = false;
                     if (this.scheduleSnapOrPick) {
@@ -137,7 +142,6 @@ class PickController {
                 if (pickResultCanvasPos[0] === this.pickCursorPos[0] && pickResultCanvasPos[1] === this.pickCursorPos[1]) {
                     this.picked = true;
                     this.pickedSurface = false;
-                    this._needFireEvents = false;
                     this.schedulePickEntity = false;
                     this.schedulePickSurface = false;
                     return;
@@ -158,10 +162,10 @@ class PickController {
                 } else {
                     this.pickedSurface = true;
                 }
-                this._needFireEvents = true;
+                this._needFireEvents++;
             } else if (this.scheduleSnapOrPick) {
                 this.hoveredSnappedOrSurfaceOff = true;
-                this._needFireEvents = true;
+                this._needFireEvents++;
             }
 
         } else { // schedulePickEntity == true
@@ -173,7 +177,7 @@ class PickController {
             if (this.pickResult) {
                 this.picked = true;
                 this.pickedSurface = false;
-                this._needFireEvents = true;
+                this._needFireEvents++;
             }
         }
 
@@ -184,14 +188,14 @@ class PickController {
 
     fireEvents() {
 
-        if (!this._needFireEvents) {
+        if (this._needFireEvents === 0) {
             return;
         }
 
         if (this.hoveredSnappedOrSurfaceOff) {
             this._cameraControl.fire("hoverSnapOrSurfaceOff", {
                 canvasPos: this.pickCursorPos,
-                cursorPos : this.pickCursorPos
+                pointerPos : this.pickCursorPos
             }, true);
         }
 
@@ -200,9 +204,9 @@ class PickController {
                 const pickResult = new PickResult();
                 pickResult.snappedToVertex = this.snapPickResult.snappedToVertex;
                 pickResult.snappedToEdge = this.snapPickResult.snappedToEdge;
-                pickResult.worldPos = this.snapPickResult.snappedWorldPos;
-                pickResult.cursorPos = this.pickCursorPos;
-                pickResult.canvasPos = this.snapPickResult.snappedCanvasPos;
+                pickResult.worldPos = this.snapPickResult.worldPos;
+                pickResult.canvasPos = this.pickCursorPos
+                pickResult.snappedCanvasPos = this.snapPickResult.snappedCanvasPos;
                 this._cameraControl.fire("hoverSnapOrSurface", pickResult, true);
                 this.snapPickResult = null;
             } else {
@@ -254,10 +258,7 @@ class PickController {
 
         this.pickResult = null;
 
-        this._needFireEvents = false;
-    }
-
-    destroy() {
+        this._needFireEvents = 0;
     }
 }
 

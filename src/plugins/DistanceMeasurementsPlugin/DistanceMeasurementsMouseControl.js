@@ -58,7 +58,34 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
 
         this._active = false;
 
+        this._currentDistanceMeasurement = null;
+
+        this._currentDistanceMeasurementInitState = {
+            wireVisible: null,
+            axisVisible: null,
+            xAxisVisible: null,
+            yaxisVisible: null,
+            zAxisVisible: null,
+            targetVisible: null,
+        }
+
+        this._initMarkerDiv()
+
+        this._onCameraControlHoverSnapOrSurface = null;
+        this._onCameraControlHoverSnapOrSurfaceOff = null;
+        this._onMouseDown = null;
+        this._onMouseUp = null;
+        this._onCanvasTouchStart = null;
+        this._onCanvasTouchEnd = null;
+        this._snapping = cfg.snapping !== false;
+        this._mouseState = MOUSE_FIRST_CLICK_EXPECTED;
+
+        this._attachPlugin(distanceMeasurementsPlugin, cfg);
+    }
+
+    _initMarkerDiv() {
         const markerDiv = document.createElement('div');
+        markerDiv.setAttribute('id', 'myMarkerDiv');
         const canvas = this.scene.canvas.canvas;
         canvas.parentNode.insertBefore(markerDiv, canvas);
         markerDiv.style.background = "black";
@@ -72,28 +99,14 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         markerDiv.style.pointerEvents = "none";
 
         this._markerDiv = markerDiv;
+    }
 
-        this._currentDistanceMeasurement = null;
-
-        this._currentDistanceMeasurementInitState = {
-            wireVisible: null,
-            axisVisible: null,
-            xAxisVisible: null,
-            yaxisVisible: null,
-            zAxisVisible: null,
-            targetVisible: null,
+    _destroyMarkerDiv() {
+        if (this._markerDiv) {
+            const element = document.getElementById('myMarkerDiv')
+            element.parentNode.removeChild(element)
+            this._markerDiv = null
         }
-
-        this._onCameraControlHoverSnapOrSurface = null;
-        this._onCameraControlHoverSnapOrSurfaceOff = null;
-        this._onMouseDown = null;
-        this._onMouseUp = null;
-        this._onCanvasTouchStart = null;
-        this._onCanvasTouchEnd = null;
-        this._snapping = cfg.snapping !== false;
-        this._mouseState = MOUSE_FIRST_CLICK_EXPECTED;
-
-        this._attachPlugin(distanceMeasurementsPlugin, cfg);
     }
 
     _attachPlugin(distanceMeasurementsPlugin, cfg = {}) {
@@ -161,6 +174,12 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
             return;
         }
 
+        if (!this._markerDiv) {
+            this._initMarkerDiv()
+        }
+
+        this.fire("activated", true);
+
         const distanceMeasurementsPlugin = this.distanceMeasurementsPlugin;
         const scene = this.scene;
         const cameraControl = distanceMeasurementsPlugin.viewer.cameraControl;
@@ -179,18 +198,19 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
             this._snapping
                 ? "hoverSnapOrSurface"
                 : "hoverSurface", event => {
+                const canvasPos = event.snappedCanvasPos || event.canvasPos;
                 mouseHovering = true;
                 pointerWorldPos.set(event.worldPos);
                 pointerCanvasPos.set(event.canvasPos);
                 if (this._mouseState === MOUSE_FIRST_CLICK_EXPECTED) {
-                    this._markerDiv.style.marginLeft = `${event.canvasPos[0] - 5}px`;
-                    this._markerDiv.style.marginTop = `${event.canvasPos[1] - 5}px`;
+                    this._markerDiv.style.marginLeft = `${canvasPos[0] - 5}px`;
+                    this._markerDiv.style.marginTop = `${canvasPos[1] - 5}px`;
                     this._markerDiv.style.background = "pink";
                     if (event.snappedToVertex || event.snappedToEdge) {
                         if (this.pointerLens) {
                             this.pointerLens.visible = true;
-                            this.pointerLens.centerPos = event.cursorPos || event.canvasPos;
-                            this.pointerLens.cursorPos = event.canvasPos;
+                            this.pointerLens.canvasPos = event.canvasPos;
+                            this.pointerLens.snappedCanvasPos = event.snappedCanvasPos || event.canvasPos;
                             this.pointerLens.snapped = true;
                         }
                         this._markerDiv.style.background = "greenyellow";
@@ -198,8 +218,8 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                     } else {
                         if (this.pointerLens) {
                             this.pointerLens.visible = true;
-                            this.pointerLens.centerPos = event.cursorPos || event.canvasPos;
-                            this.pointerLens.cursorPos = event.canvasPos;
+                            this.pointerLens.canvasPos =  event.canvasPos;
+                            this.pointerLens.snappedCanvasPos = event.canvasPos;
                             this.pointerLens.snapped = false;
                         }
                         this._markerDiv.style.background = "pink";
@@ -281,8 +301,8 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                 : "hoverOff", event => {
             if (this.pointerLens) {
                 this.pointerLens.visible = true;
-                this.pointerLens.centerPos = event.cursorPos || event.canvasPos;
-                this.pointerLens.cursorPos = event.canvasPos;
+                this.pointerLens.canvasPos =  event.canvasPos;
+                this.pointerLens.snappedCanvasPos = event.snappedCanvasPos || event.canvasPos;
             }
             mouseHovering = false;
             this._markerDiv.style.marginLeft = `-100px`;
@@ -307,11 +327,16 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         if (!this._active) {
             return;
         }
+
+        this.fire("activated", false);
+
         if (this.pointerLens) {
             this.pointerLens.visible = false;
         }
+        if (this._markerDiv) {
+            this._destroyMarkerDiv()
+        }
         this.reset();
-        this.viewer
         const canvas = this.scene.canvas.canvas;
         canvas.removeEventListener("mousedown", this._onMouseDown);
         canvas.removeEventListener("mouseup", this._onMouseUp);
@@ -337,6 +362,10 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         if (!this._active) {
             return;
         }
+
+        this._destroyMarkerDiv()
+        this._initMarkerDiv()
+
         if (this._currentDistanceMeasurement) {
             this.distanceMeasurementsPlugin.fire("measurementCancel", this._currentDistanceMeasurement);
             this._currentDistanceMeasurement.destroy();
