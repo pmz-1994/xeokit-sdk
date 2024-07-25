@@ -6,3 +6,5 @@ export * from "./buildPlaneGeometry.js";
 export * from "./buildSphereGeometry.js";
 export * from "./buildTorusGeometry.js";
 export * from "./buildVectorTextGeometry.js";
+export * from "./buildPolylineGeometry.js";
+export * from "./buildLineGeometry.js";

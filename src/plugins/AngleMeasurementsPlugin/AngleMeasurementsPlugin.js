@@ -5,10 +5,10 @@ import {AngleMeasurementsMouseControl} from "./AngleMeasurementsMouseControl.js"
 /**
  * {@link Viewer} plugin for measuring angles.
  *
- * [<img src="https://user-images.githubusercontent.com/83100/63641903-61488180-c6b6-11e9-8e00-895b9d16dc4b.gif">](https://xeokit.github.io/xeokit-sdk/examples/#measurements_angle_createWithMouse)
+ * [<img src="https://user-images.githubusercontent.com/83100/63641903-61488180-c6b6-11e9-8e00-895b9d16dc4b.gif">](https://xeokit.github.io/xeokit-sdk/examples/index.html#measurements_angle_createWithMouse)
  *
- * * [[Example 1: Model with angle measurements](https://xeokit.github.io/xeokit-sdk/examples/#measurements_angle_modelWithMeasurements)]
- * * [[Example 2: Create angle measurements with mouse](https://xeokit.github.io/xeokit-sdk/examples/#measurements_angle_createWithMouse)]
+ * * [[Example 1: Model with angle measurements](https://xeokit.github.io/xeokit-sdk/examples/index.html#measurements_angle_modelWithMeasurements)]
+ * * [[Example 2: Create angle measurements with mouse](https://xeokit.github.io/xeokit-sdk/examples/measurement/#angle_createWithMouse_snapping)]
  *
  * ## Overview
  *
@@ -28,7 +28,7 @@ import {AngleMeasurementsMouseControl} from "./AngleMeasurementsMouseControl.js"
  * Note how each AngleMeasurement has ````origin````, ````corner```` and  ````target````, which each indicate a 3D World-space
  * position on the surface of an {@link Entity}. These can be aon the same Entity, or on different Entitys.
  *
- * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/#measurements_angle_modelWithMeasurements)]
+ * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/index.html#measurements_angle_modelWithMeasurements)]
  *
  * ````JavaScript
  * import {Viewer, XKTLoaderPlugin, AngleMeasurementsPlugin} from "xeokit-sdk.es.js";
@@ -99,7 +99,7 @@ import {AngleMeasurementsMouseControl} from "./AngleMeasurementsMouseControl.js"
  * The AngleMeasurementControl will then wait for the next click on any Entity, to begin constructing
  * another AngleMeasurement, and so on, until deactivated again.
  *
- * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/#measurements_angle_createWithMouse)]
+ * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/measurement/#angle_createWithMouse_snapping)]
  *
  * ````JavaScript
  * import {Viewer, XKTLoaderPlugin, AngleMeasurementsPlugin, AngleMeasurementsMouseControl, PointerLens} from "xeokit-sdk.es.js";
@@ -202,6 +202,46 @@ import {AngleMeasurementsMouseControl} from "./AngleMeasurementsMouseControl.js"
  *             visible: true
  *         });
  * });
+ * ````
+ *
+ * ## Example 5: Creating AngleMeasurements with Touch Input
+ *
+ * In our fifth example, we'll show how to create angle measurements with touch input, with snapping
+ * to the nearest vertex or edge. While creating the measurements, a long-touch when setting the
+ * start, corner or end point will cause the point to snap to the nearest vertex or edge. A quick
+ * touch-release will immediately set the point at the tapped position on the object surface.
+ *
+ * [[Run example](https://xeokit.github.io/xeokit-sdk/examples/measurement/#angle_createWithTouch_snapping)]
+ *
+ * ````javascript
+ * import {Viewer, XKTLoaderPlugin, AngleMeasurementsPlugin, AngleMeasurementsTouchControl} from "xeokit-sdk.es.js";
+ *
+ * const viewer = new Viewer({
+ *     canvasId: "myCanvas",
+ *     transparent: true
+ * });
+ *
+ * viewer.scene.camera.eye = [-2.37, 18.97, -26.12];
+ * viewer.scene.camera.look = [10.97, 5.82, -11.22];
+ * viewer.scene.camera.up = [0.36, 0.83, 0.40];
+ *
+ * const xktLoader = new XKTLoaderPlugin(viewer);
+ *
+ * const angleMeasurements = new AngleMeasurementsPlugin(viewer);
+ *
+ * const model = xktLoader.load({
+ *      src: "./models/xkt/duplex/duplex.xkt"
+ * });
+ *
+ * const angleMeasurements = new AngleMeasurementsPlugin(viewer);
+ *
+ * const angleMeasurementsTouchControl  = new AngleMeasurementsTouchControl(angleMeasurements, {
+ *     pointerLens : new PointerLens(viewer),
+ *     snapToVertex: true,
+ *     snapToEdge: true
+ * })
+ *
+ * angleMeasurementsTouchControl.activate();
  * ````
  */
 export class AngleMeasurementsPlugin extends Plugin {
@@ -352,6 +392,7 @@ export class AngleMeasurementsPlugin extends Plugin {
         measurement.on("destroyed", () => {
             delete this._measurements[measurement.id];
         });
+        measurement.clickable = true;
         this.fire("measurementCreated", measurement);
         return measurement;
     }

@@ -55,6 +55,13 @@ export declare class DistanceMeasurementsControl extends Component {
     deactivate(): void;
 
     /**
+     * Gets the {@link DistanceMeasurement} under construction by this DistanceMeasurementsControl, if any.
+     *
+     * @returns {null|DistanceMeasurement}
+     */
+    get currentMeasurement() : DistanceMeasurement
+
+    /**
      * Resets this DistanceMeasurementsControl.
      *
      * Destroys any {@link DistanceMeasurement} under construction.
@@ -88,10 +95,25 @@ export declare class DistanceMeasurementsControl extends Component {
     on(event: "measurementStart", callback: (measurement: DistanceMeasurement) => void, scope?: any): string
 
     /**
-     * Fires when the the control is (de)activated
+     * Fires when the control is (de)activated
      * @param event The activation event
      * @param callback Called fired on the event
      * @param scope  Scope for the callback
      */
     on(event: "activated", callback: (activated: boolean) => void, scope?: any): string
+}
+
+export declare class DistanceMeasurementEditControl extends Component {
+    /**
+     * Deactivates a {@link DistanceMeasurementEditControl}.
+     */
+    deactivate(): void;
+}
+
+export declare class DistanceMeasurementEditMouseControl extends DistanceMeasurementEditControl {
+
+}
+
+export declare class DistanceMeasurementEditTouchControl extends DistanceMeasurementEditControl {
+
 }

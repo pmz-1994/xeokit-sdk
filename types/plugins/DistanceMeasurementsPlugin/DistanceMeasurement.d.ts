@@ -45,6 +45,19 @@ export declare class DistanceMeasurement extends Component {
   get visible(): boolean;
 
   /**
+   * Sets whether this DistanceMeasurement is highlighted or not.
+   *
+   * @type {Boolean}
+   */
+  set highlighted(arg: boolean);
+  /**
+   * Gets whether this DistanceMeasurement is highlighted or not.
+   *
+   * @type {Boolean}
+   */
+  get highlighted(): boolean;
+
+  /**
    * Sets if the origin {@link Marker} is visible.
    *
    * @type {Boolean}
@@ -86,6 +99,76 @@ export declare class DistanceMeasurement extends Component {
    */
   get wireVisible(): boolean;
 
+  /**
+   * Sets if the labels are visible
+   *
+   * @type {Boolean}
+   */
+  set labelsVisible(arg: boolean);
+
+  /**
+   * Sets if the labels are visible
+   *
+   * @type {Boolean}
+   */
+  get labelsVisible(): boolean;
+
+  /**
+   * Sets if the x label is visible.
+   *
+   * @type {Boolean}
+   */
+  set xLabelVisible(arg: boolean);
+
+  /**
+   * Gets if the x label is visible.
+   *
+   * @type {Boolean}
+   */
+  get xLabelVisible(): boolean;
+
+  /**
+   * Sets if the y label is visible.
+   *
+   * @type {Boolean}
+   */
+  set yLabelVisible(arg: boolean);
+
+  /**
+   * Gets if the y label is visible.
+   *
+   * @type {Boolean}
+   */
+  get yLabelVisible(): boolean;
+
+  /**
+   * Sets if the z label is visible.
+   *
+   * @type {Boolean}
+   */
+  set zLabelVisible(arg: boolean);
+
+  /**
+   * Gets if the z label is visible.
+   *
+   * @type {Boolean}
+   */
+  get zLabelVisible(): boolean;
+
+  /**
+   * Sets if the length label is visible.
+   *
+   * @type {Boolean}
+   */
+  set lengthLabelVisible(arg: boolean);
+
+  /**
+   * Gets if the length label is visible.
+   *
+   * @type {Boolean}
+   */
+  get lengthLabelVisible(): boolean;
+  
   /**
    * Sets if the axis-aligned wires between {@link DistanceMeasurement.origin} and {@link DistanceMeasurement.target} are visible.
    *
@@ -134,4 +217,25 @@ export declare class DistanceMeasurement extends Component {
    * @type {String}
    */
   get color(): string;
+
+  /**
+   * Sets if labels should be positioned on the wires.
+   *
+   * @type {Boolean}
+   */
+  set labelsOnWires(arg: boolean);
+
+  /**
+   * Gets if labels should be positioned on the wires.
+   *
+   * @type {Boolean}
+   */
+  get labelsOnWires() : boolean;
+
+  /**
+   * Sets the higlihted state on a measurement
+   *
+   * @type {String}
+   */
+  setHighlighted(highlighted: boolean): void;
 }

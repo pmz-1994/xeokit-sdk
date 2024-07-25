@@ -1,6 +1,5 @@
-import {Marker} from "../../viewer/scene/marker/Marker.js";
+import {Dot3D} from "../lib/ui/index.js";
 import {Wire} from "../lib/html/Wire.js";
-import {Dot} from "../lib/html/Dot.js";
 import {Label} from "../lib/html/Label.js";
 import {math} from "../../viewer/scene/math/math.js";
 import {Component} from "../../viewer/scene/Component.js";
@@ -37,10 +36,6 @@ class AngleMeasurement extends Component {
 
         var scene = this.plugin.viewer.scene;
 
-        this._originMarker = new Marker(scene, cfg.origin);
-        this._cornerMarker = new Marker(scene, cfg.corner);
-        this._targetMarker = new Marker(scene, cfg.target);
-
         this._originWorld = math.vec3();
         this._cornerWorld = math.vec3();
         this._targetWorld = math.vec3();
@@ -52,10 +47,12 @@ class AngleMeasurement extends Component {
 
         const onMouseOver = cfg.onMouseOver ? (event) => {
             cfg.onMouseOver(event, this);
+            this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new MouseEvent('mouseover', event));
         } : null;
 
         const onMouseLeave = cfg.onMouseLeave ? (event) => {
             cfg.onMouseLeave(event, this);
+            this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new MouseEvent('mouseleave', event));
         } : null;
 
         const onContextMenu = cfg.onContextMenu ? (event) => {
@@ -66,28 +63,49 @@ class AngleMeasurement extends Component {
             this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new WheelEvent('wheel', event));
         };
 
-        this._originDot = new Dot(this._container, {
+        const onMouseDown = (event) => {
+            this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new MouseEvent('mousedown', event));
+        } ;
+
+        const onMouseUp =  (event) => {
+            this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new MouseEvent('mouseup', event));
+        };
+
+        const onMouseMove =  (event) => {
+            this.plugin.viewer.scene.canvas.canvas.dispatchEvent(new MouseEvent('mousemove', event));
+        };
+
+        this._originDot = new Dot3D(scene, cfg.origin, this._container, {
             fillColor: this._color,
             zIndex: plugin.zIndex !== undefined ? plugin.zIndex + 2 : undefined,
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
-        this._cornerDot = new Dot(this._container, {
+        this._cornerDot = new Dot3D(scene, cfg.corner, this._container, {
             fillColor: this._color,
             zIndex: plugin.zIndex !== undefined ? plugin.zIndex + 2 : undefined,
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
-        this._targetDot = new Dot(this._container, {
+        this._targetDot = new Dot3D(scene, cfg.target, this._container, {
             fillColor: this._color,
             zIndex: plugin.zIndex !== undefined ? plugin.zIndex + 2 : undefined,
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
 
@@ -98,6 +116,9 @@ class AngleMeasurement extends Component {
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
         this._targetWire = new Wire(this._container, {
@@ -107,6 +128,9 @@ class AngleMeasurement extends Component {
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
 
@@ -118,6 +142,9 @@ class AngleMeasurement extends Component {
             onMouseOver,
             onMouseLeave,
             onMouseWheel,
+            onMouseDown,
+            onMouseUp,
+            onMouseMove,
             onContextMenu
         });
 
@@ -137,19 +164,19 @@ class AngleMeasurement extends Component {
         this._labelsVisible = false;
         this._clickable = false;
 
-        this._originMarker.on("worldPos", (value) => {
+        this._originDot.on("worldPos", (value) => {
             this._originWorld.set(value || [0, 0, 0]);
             this._wpDirty = true;
             this._needUpdate(0); // No lag
         });
 
-        this._cornerMarker.on("worldPos", (value) => {
+        this._cornerDot.on("worldPos", (value) => {
             this._cornerWorld.set(value || [0, 0, 0]);
             this._wpDirty = true;
             this._needUpdate(0); // No lag
         });
 
-        this._targetMarker.on("worldPos", (value) => {
+        this._targetDot.on("worldPos", (value) => {
             this._targetWorld.set(value || [0, 0, 0]);
             this._wpDirty = true;
             this._needUpdate(0); // No lag
@@ -255,9 +282,9 @@ class AngleMeasurement extends Component {
         if (this._cpDirty) {
 
             const near = -0.3;
-            const zOrigin = this._originMarker.viewPos[2];
-            const zCorner = this._cornerMarker.viewPos[2];
-            const zTarget = this._targetMarker.viewPos[2];
+            const zOrigin = this._originDot.viewPos[2];
+            const zCorner = this._cornerDot.viewPos[2];
+            const zTarget = this._targetDot.viewPos[2];
 
             if (zOrigin > near || zCorner > near || zTarget > near) {
 
@@ -293,10 +320,6 @@ class AngleMeasurement extends Component {
                 cp[j + 1] = top + Math.floor((1 - pp[i + 1] / pp[i + 3]) * canvasHeight / 2);
                 j += 2;
             }
-
-            this._originDot.setPos(cp[0], cp[1]);
-            this._cornerDot.setPos(cp[2], cp[3]);
-            this._targetDot.setPos(cp[4], cp[5]);
 
             this._originWire.setStartAndEnd(cp[0], cp[1], cp[2], cp[3]);
             this._targetWire.setStartAndEnd(cp[2], cp[3], cp[4], cp[5]);
@@ -378,30 +401,30 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Gets the origin {@link Marker}.
+     * Gets the origin {@link Dot3D}.
      *
-     * @type {Marker}
+     * @type {Dot3D}
      */
     get origin() {
-        return this._originMarker;
+        return this._originDot;
     }
 
     /**
-     * Gets the corner {@link Marker}.
+     * Gets the corner {@link Dot3D}.
      *
-     * @type {Marker}
+     * @type {Dot3D}
      */
     get corner() {
-        return this._cornerMarker;
+        return this._cornerDot;
     }
 
     /**
-     * Gets the target {@link Marker}.
+     * Gets the target {@link Dot3D}.
      *
-     * @type {Marker}
+     * @type {Dot3D}
      */
     get target() {
-        return this._targetMarker;
+        return this._targetDot;
     }
 
     /**
@@ -471,7 +494,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Sets if the origin {@link Marker} is visible.
+     * Sets if the origin {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */
@@ -484,7 +507,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Gets if the origin {@link Marker} is visible.
+     * Gets if the origin {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */
@@ -493,7 +516,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Sets if the corner {@link Marker} is visible.
+     * Sets if the corner {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */
@@ -506,7 +529,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Gets if the corner {@link Marker} is visible.
+     * Gets if the corner {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */
@@ -515,7 +538,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Sets if the target {@link Marker} is visible.
+     * Sets if the target {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */
@@ -528,7 +551,7 @@ class AngleMeasurement extends Component {
     }
 
     /**
-     * Gets if the target {@link Marker} is visible.
+     * Gets if the target {@link Dot3D} is visible.
      *
      * @type {Boolean}
      */

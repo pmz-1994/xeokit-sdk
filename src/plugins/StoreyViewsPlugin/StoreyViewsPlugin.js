@@ -15,9 +15,9 @@ const EMPTY_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAA
 /**
  * @desc A {@link Viewer} plugin that provides methods for visualizing IfcBuildingStoreys.
  *
- *  <a href="https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_recipe2"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/minimap.gif"></a>
+ *  <a href="https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe3"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/minimap.gif"></a>
  *
- * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_recipe2)]
+ * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe3)]
  *
  * ## Overview
  *
@@ -115,10 +115,6 @@ const EMPTY_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAA
  * });
  * ````
  *
- * <a href="https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_showStoreyObjects"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/showStoreyObjects.gif"></a>
- *
- * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_showStoreyObjects)]
- *
  * When using this option, at some point later you'll probably want to restore all Entitys to their original visibilities and
  * appearances.
  *
@@ -146,10 +142,6 @@ const EMPTY_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAA
  *
  * The {@link StoreyViewsPlugin#gotoStoreyCamera} method positions the {@link Camera} for a plan view of
  * the {@link Entity}s within the given storey.
- *
- * <a href="https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_gotoStoreyCamera"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/gotoStoreyCamera.gif"></a>
- *
- * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/#storeyViews_StoreyViewsPlugin_gotoStoreyCamera)]
  *
  * Let's fly the {@link Camera} to a downward-looking orthographic view of the Entitys within our storey.
  *
@@ -197,10 +189,6 @@ const EMPTY_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAA
  *
  * The {@link StoreyViewsPlugin#createStoreyMap} method creates a 2D orthographic plan image of the given storey.
  *
- * <a href="https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe1"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/createStoreyMap.png"></a>
- *
- * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe1)]
- *
  * This method creates a {@link StoreyMap}, which provides the plan image as a Base64-encoded string.
  *
  * Let's create a 2D plan image of our building storey:
@@ -229,10 +217,6 @@ const EMPTY_IMAGE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAA
  * ## Picking Entities in StoreyMaps
  *
  * We can use {@link StoreyViewsPlugin#pickStoreyMap} to pick Entities in our building storey, using 2D coordinates from mouse or touch events on our {@link StoreyMap}'s 2D plan image.
- *
- * <a href="https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe1"><img src="http://xeokit.io/img/docs/StoreyViewsPlugin/recipe2.gif"></a>
- *
- * [[Run this example](https://xeokit.github.io/xeokit-sdk/examples/navigation/#StoreyViewsPlugin_recipe1)]
  *
  * Let's programmatically pick the Entity at the given 2D pixel coordinates within our image:
  *
@@ -691,10 +675,40 @@ class StoreyViewsPlugin extends Plugin {
     getStoreyContainingWorldPos(worldPos) {
         for (var storeyId in this.storeys) {
             const storey = this.storeys[storeyId];
-            if (math.point3AABB3Intersect(storey.storeyAABB, worldPos)) {
+            if (math.point3AABB3AbsoluteIntersect(storey.storeyAABB, worldPos)) {
                 return storeyId;
             }
         }
+        return null;
+    }
+
+    /**
+     * Gets the ID of the storey which's bounding box contains the y point of the world position
+     * 
+     * @param {Number[]} worldPos 3D World-space position.
+     * @returns {String} ID of the storey containing the position, or null if the position falls outside all the storeys.
+     */
+    getStoreyInVerticalRange(worldPos) {
+        for(let storeyId in this.storeys) {
+            const storey = this.storeys[storeyId];
+            const aabb = [0,0,0,0,0,0], pos = [0,0,0];
+            aabb[1] = storey.storeyAABB[1];
+            aabb[4] = storey.storeyAABB[4];
+            pos[1] = worldPos[1];
+            if (math.point3AABB3AbsoluteIntersect(aabb, pos)) {
+                return storeyId;
+            }
+        }
+        return null;
+    }
+
+    isPositionAboveOrBelowBuilding(worldPos){
+        const keys = Object.keys(this.storeys);
+        const ids = [keys[0], keys[keys.length-1]];
+        if(worldPos[1] < this.storeys[ids[0]].storeyAABB[1])
+            return ids[0];
+        else if (worldPos[1] > this.storeys[ids[1]].storeyAABB[4])
+            return ids[1];
         return null;
     }
 

@@ -138,6 +138,8 @@ class MetaModel {
 
         this.metaScene.metaModels[this.id] = this;
 
+        this._propertyLookup = [];
+
         /**
          * True when this MetaModel has been finalized.
          * @type {boolean}
@@ -152,7 +154,7 @@ class MetaModel {
      * @type {MetaObject|null}
      */
     get rootMetaObject() {
-        if (this.rootMetaObjects.length == 1) {
+        if (this.rootMetaObjects.length === 1) {
             return this.rootMetaObjects[0];
         }
         return null;
@@ -173,16 +175,22 @@ class MetaModel {
         const metaScene = this.metaScene;
         const propertyLookup = metaModelData.properties;
 
+        if (propertyLookup) {
+            for (let i = 0, len = propertyLookup.length; i < len; i++) {
+                this._propertyLookup.push(propertyLookup[i]);
+            }
+        }
+
         // Create global Property Sets
 
         if (metaModelData.propertySets) {
             for (let i = 0, len = metaModelData.propertySets.length; i < len; i++) {
                 const propertySetData = metaModelData.propertySets[i];
+                if (!propertySetData.properties) { // HACK: https://github.com/Creoox/creoox-ifc2gltfcxconverter/issues/8
+                    propertySetData.properties = [];
+                }
                 let propertySet = metaScene.propertySets[propertySetData.id];
                 if (!propertySet) {
-                    if (propertyLookup) {
-                        this._decompressProperties(propertyLookup, propertySetData.properties);
-                    }
                     propertySet = new PropertySet({
                         id: propertySetData.id,
                         originalSystemId: propertySetData.originalSystemId || propertySetData.id,
@@ -217,26 +225,32 @@ class MetaModel {
                         external: metaObjectData.external,
                     });
                     this.metaScene.metaObjects[id] = metaObject;
+                    metaObject.metaModels = [];
                 }
-                metaObject.metaModels.push(this);
+                this.metaObjects.push(metaObject);
                 if (!metaObjectData.parent) {
                     this.rootMetaObjects.push(metaObject);
                     metaScene.rootMetaObjects[id] = metaObject;
                 }
-                this.metaObjects.push(metaObject);
             }
         }
     }
 
     _decompressProperties(propertyLookup, properties) {
+        const propsNotFound = [];
         for (let i = 0, len = properties.length; i < len; i++) {
             const property = properties[i];
             if (Number.isInteger(property)) {
                 const lookupProperty = propertyLookup[property];
                 if (lookupProperty) {
                     properties[i] = lookupProperty;
+                } else {
+                    propsNotFound.push(property);
                 }
             }
+        }
+        if (propsNotFound.length > 0) {
+            console.error(`[MetaModel._decompressProperties] Properties not found: ${propsNotFound}`);
         }
     }
 
@@ -281,6 +295,21 @@ class MetaModel {
             }
         }
 
+        // Relink MetaObjects to their MetaModels
+
+        for (let objectId in metaScene.metaObjects) {
+            const metaObject = metaScene.metaObjects[objectId];
+            metaObject.metaModels = [];
+        }
+
+        for (let modelId in metaScene.metaModels) {
+            const metaModel = metaScene.metaModels[modelId];
+            for (let i = 0, len = metaModel.metaObjects.length; i < len; i++) {
+                const metaObject = metaModel.metaObjects[i];
+                metaObject.metaModels.push(metaModel);
+            }
+        }
+
         // Rebuild MetaScene's MetaObjects-by-type lookup
 
         metaScene.metaObjectsByType = {};
@@ -289,6 +318,18 @@ class MetaModel {
             const type = metaObject.type;
             (metaScene.metaObjectsByType[type] || (metaScene.metaObjectsByType[type] = {}))[objectId] = metaObject;
         }
+
+        // Decompress properties
+
+        if (this.propertySets) {
+            for (let i = 0, len = this.propertySets.length; i < len; i++) {
+                const propertySet = this.propertySets[i];
+                this._decompressProperties(this._propertyLookup, propertySet.properties);
+            }
+        }
+
+
+        this._propertyLookup = [];
 
         this.finalized = true;
 

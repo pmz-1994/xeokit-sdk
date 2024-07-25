@@ -1,21 +1,27 @@
 {
   "name": "@xeokit/xeokit-sdk",
-  "version": "2.4.2-beta-34",
+  "version": "2.6.29",
   "description": "Web Programming Toolkit for 3D/2D BIM and AEC Graphics",
   "module": "./dist/xeokit-sdk.es.js",
   "main": "./dist/xeokit-sdk.cjs.js",
   "types": "./types/index.d.ts",
   "scripts": {
-    "build": "rollup --config rollup.config.js; rollup --config rollup.minified.config.js; cp node_modules/web-ifc/web-ifc.wasm dist/.",
-    "dev-build": "rollup --config rollup.dev.config.js; cp node_modules/web-ifc/web-ifc.wasm dist/.",
-    "test": "percy exec -- node ./snapshots.js",
+    "build": "rollup --config rollup.config.js; rollup --config rollup.minified.config.js",
+    "dev-build": "rollup --config rollup.dev.config.js",
     "docs": "rm -Rf ./docs/*; ./node_modules/.bin/esdoc",
     "typedocs": "rm -Rf ./docs/*; typedoc --tsconfig tsconfig.json",
-    "publish": "npm publish --access public"
+    "publish": "npm publish --access public",
+    "changelog": "git fetch; auto-changelog --commit-limit false --package --template changelog-template.hbs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/xeokit/xeokit-sdk.git"
+  },
+  "auto-changelog": {
+    "output": "CHANGELOG.md",
+    "template": "keepachangelog",
+    "unreleased": true,
+    "commitLimit": false
   },
   "keywords": [
     "webgl",
@@ -52,8 +58,7 @@
     "@loaders.gl/core": "^3.2.6",
     "@loaders.gl/gltf": "^3.2.6",
     "@loaders.gl/las": "^3.2.6",
-    "html2canvas": "^1.4.1",
-    "web-ifc": "^0.0.41"
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
     "@babel/core": "^7.18.6",
@@ -68,7 +73,8 @@
     "parse5": "^7.0.0",
     "rollup": "^2.70.2",
     "rollup-plugin-terser": "^7.0.2",
-    "typedoc": "^0.22.15"
+    "typedoc": "^0.22.15",
+    "auto-changelog": "^2.4.0"
   },
   "files": [
     "/src",

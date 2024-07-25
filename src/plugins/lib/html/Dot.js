@@ -1,3 +1,4 @@
+import { os } from "../../../viewer/utils/os.js";
 /** @private */
 class Dot {
 
@@ -8,14 +9,13 @@ class Dot {
         this._x = 0;
         this._y = 0;
 
-        this._visible = true;
         this._dot = document.createElement('div');
         this._dot.className += this._dot.className ? ' viewer-ruler-dot' : 'viewer-ruler-dot';
 
         this._dotClickable = document.createElement('div');
         this._dotClickable.className += this._dotClickable.className ? ' viewer-ruler-dot-clickable' : 'viewer-ruler-dot-clickable';
 
-        this._visible = true;
+        this._visible = !!cfg.visible;
         this._culled = false;
 
         var dot = this._dot;
@@ -56,9 +56,14 @@ class Dot {
         }
         parentElement.appendChild(dotClickable);
 
+        dotClickable.addEventListener('click', (event) => {
+            parentElement.dispatchEvent(new MouseEvent('mouseover', event));
+        });
+
         if (cfg.onMouseOver) {
             dotClickable.addEventListener('mouseover', (event) => {
                 cfg.onMouseOver(event, this);
+                parentElement.dispatchEvent(new MouseEvent('mouseover', event));
             });
         }
 
@@ -74,13 +79,81 @@ class Dot {
             });
         }
 
-        if (cfg.onContextMenu) {
-            dotClickable.addEventListener('contextmenu', (event) => {
-                cfg.onContextMenu(event, this);
-                event.preventDefault();
+        if (cfg.onMouseDown) {
+            dotClickable.addEventListener('mousedown', (event) => {
+                cfg.onMouseDown(event, this);
             });
         }
-        
+
+        if (cfg.onMouseUp) {
+            dotClickable.addEventListener('mouseup', (event) => {
+                cfg.onMouseUp(event, this);
+            });
+        }
+
+        if (cfg.onMouseMove) {
+            dotClickable.addEventListener('mousemove', (event) => {
+                cfg.onMouseMove(event, this);
+            });
+        }
+
+        if (cfg.onTouchstart) {
+            dotClickable.addEventListener('touchstart', (event) => {
+                cfg.onTouchstart(event, this);
+            });
+        }
+
+        if (cfg.onTouchmove) {
+            dotClickable.addEventListener('touchmove', (event) => {
+                cfg.onTouchmove(event, this);
+            });
+        }
+
+        if (cfg.onTouchend) {
+            dotClickable.addEventListener('touchend', (event) => {
+                cfg.onTouchend(event, this);
+            });
+        }
+
+        if (cfg.onContextMenu) {
+            if(os.isIphoneSafari()){
+                dotClickable.addEventListener('touchstart', (event) => {
+                    event.preventDefault();
+                    if(this._timeout){
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }
+                    this._timeout = setTimeout(() => {
+                        event.clientX = event.touches[0].clientX;
+                        event.clientY = event.touches[0].clientY;
+                        cfg.onContextMenu(event, this);
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }, 500);
+                })
+
+                dotClickable.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    //stops short touches from calling the timeout
+                    if(this._timeout) {
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }
+                } )
+
+            }
+            else {
+                dotClickable.addEventListener('contextmenu', (event) => {
+                    console.log(event);
+                    cfg.onContextMenu(event, this);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log("Label context menu")
+                });
+            }
+            
+        }
+
         this.setPos(cfg.x || 0, cfg.y || 0);
         this.setFillColor(cfg.fillColor);
         this.setBorderColor(cfg.borderColor);
@@ -127,7 +200,7 @@ class Dot {
     }
 
     setClickable(clickable) {
-        this._dotClickable.style["pointer-events"] = (!!clickable) ? "all" : "none";
+        this._dotClickable.style["pointer-events"] = (clickable) ? "all" : "none";
     }
 
     setHighlighted(highlighted) {

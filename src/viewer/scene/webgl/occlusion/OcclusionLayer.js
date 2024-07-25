@@ -1,6 +1,9 @@
 import {math} from "../../math/math.js";
 import {ArrayBuf} from "../ArrayBuf.js";
 
+/**
+ * @private
+ */
 class OcclusionLayer {
 
     constructor(scene, origin) {
@@ -96,7 +99,7 @@ class OcclusionLayer {
         for (let i = 0; i < this.numMarkers; i++) {
             if (this.markerList[i]) {
                 const marker = this.markerList[i];
-                const worldPos = marker.worldPos;
+                const worldPos = marker.rtcPos;
                 this.positions[j++] = worldPos[0];
                 this.positions[j++] = worldPos[1];
                 this.positions[j++] = worldPos[2];
@@ -123,7 +126,7 @@ class OcclusionLayer {
     _buildVBOs() {
         if (this.positionsBuf) {
             if (this.lenPositionsBuf === this.positions.length) { // Just updating buffer elements, don't need to reallocate
-                this.positionsBuf.setData(this.positions); // Indices don't need updating
+                this.positionsBuf.setData(new Float32Array(this.positions)); // Indices don't need updating
                 return;
             }
             this.positionsBuf.destroy();

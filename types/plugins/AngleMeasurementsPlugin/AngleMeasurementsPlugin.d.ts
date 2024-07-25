@@ -3,15 +3,71 @@ import { AngleMeasurement } from "./AngleMeasurement";
 import { AngleMeasurementsControl } from "./AngleMeasurementsControl";
 
 export declare type AngleMeasurementsPluginConfiguration = {
+
   /** Optional ID for this plugin, so that we can find it within {@link Viewer.plugins}. */
   id?: string;
+
   /** Container DOM element for markers and labels. Defaults to ````document.body````. */
   container?: HTMLElement;
+
   /** The default color of the dots, wire and label. */
   defaultColor?: string;
+
   /** If set, the wires, dots and labels will have this zIndex (+1 for dots and +2 for labels). */
   zIndex?: number;
 };
+
+/**
+ * Event fire by {@link AngleMeasurementsPlugin} when mouse enters over an {@link AngleMeasurement}.
+ */
+export declare type AngleMeasurementMouseOverEvent = {
+
+    /**
+     * The plugin.
+     */
+    plugin: AngleMeasurementsPlugin;
+
+    /**
+     * The measurement.
+     */
+    angleMeasurement: AngleMeasurement;
+
+    /**
+     * The measurement.
+     */
+    measurement: AngleMeasurement;
+
+    /**
+     * The original mouse event.
+     */
+    event: MouseEvent;
+}
+
+/**
+ * Event fire by {@link AngleMeasurementsPlugin} when mouse leaves an {@link AngleMeasurement}.
+ */
+export declare type AngleMeasurementMouseLeaveEvent = {
+
+    /**
+     * The plugin.
+     */
+    plugin: AngleMeasurementsPlugin;
+
+    /**
+     * The measurement.
+     */
+    angleMeasurement: AngleMeasurement;
+
+    /**
+     * The measurement.
+     */
+    measurement: AngleMeasurement;
+
+    /**
+     * The original mouse event.
+     */
+    event: MouseEvent;
+}
 
 /**
  * {@link Viewer} plugin for measuring angles.
@@ -83,7 +139,35 @@ export declare class AngleMeasurementsPlugin extends Plugin {
    */
   clear(): void;
 
-  /**
+    /**
+     * Fires when mouse is over a measurement.
+     * @param {String} event The mouseOver event
+     * @param {Function} callback Callback fired on the event
+     */
+    on(event: "mouseOver", callback: (event: AngleMeasurementMouseOverEvent)=> void): string;
+
+    /**
+     * Fires when mouse leaves a measurement.
+     * @param {String} event The mouseLeave event
+     * @param {Function} callback Callback fired on the event
+     */
+    on(event: "mouseLeave", callback: (event: AngleMeasurementMouseLeaveEvent)=> void): string;
+
+    /**
+     * Fires when a context menu is to be opened on a measurement.
+     * @param {String} event The contextMenu event
+     * @param {Function} callback Callback fired on the event
+     */
+    on(event: "contextMenu", callback: (measurement: AngleMeasurement)=> void): string;
+    
+    /**
+     * Fires when a measurement is completed.
+     * @param {String} event The measurementEnd event
+     * @param {Function} callback Callback fired on the event
+     */
+    on(event: "measurementStart", callback: (measurement: AngleMeasurement)=> void): string;
+    
+    /**
    * Fires when a measurement is created.
    * @param {String} event The measurementCreated event
    * @param {Function} callback Callback fired on the event

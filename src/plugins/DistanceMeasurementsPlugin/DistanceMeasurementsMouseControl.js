@@ -47,12 +47,15 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
      *
      * @param {DistanceMeasurementsPlugin} distanceMeasurementsPlugin The AngleMeasurementsPlugin to control.
      * @param [cfg] Configuration
+     * @param {function} [cfg.canvasToPagePos] Optional function to map canvas-space coordinates to page coordinates.
      * @param {PointerLens} [cfg.pointerLens] A PointerLens to use to provide a magnified view of the cursor when snapping is enabled.
      * @param {boolean} [cfg.snapping=true] Whether to initially enable snap-to-vertex and snap-to-edge for this DistanceMeasurementsMouseControl.
      */
     constructor(distanceMeasurementsPlugin, cfg = {}) {
 
         super(distanceMeasurementsPlugin.viewer.scene);
+
+        this._canvasToPagePos = cfg.canvasToPagePos;
 
         this.pointerLens = cfg.pointerLens;
 
@@ -71,12 +74,6 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
 
         this._initMarkerDiv()
 
-        this._onCameraControlHoverSnapOrSurface = null;
-        this._onCameraControlHoverSnapOrSurfaceOff = null;
-        this._onMouseDown = null;
-        this._onMouseUp = null;
-        this._onCanvasTouchStart = null;
-        this._onCanvasTouchEnd = null;
         this._snapping = cfg.snapping !== false;
         this._mouseState = MOUSE_FIRST_CLICK_EXPECTED;
 
@@ -93,7 +90,9 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         markerDiv.style.borderRadius = "10px";
         markerDiv.style.width = "5px";
         markerDiv.style.height = "5px";
-        markerDiv.style.margin = "-200px -200px";
+        markerDiv.style.top = "-200px";
+        markerDiv.style.left = "-200px";
+        markerDiv.style.margin = "0 0";
         markerDiv.style.zIndex = "100";
         markerDiv.style.position = "absolute";
         markerDiv.style.pointerEvents = "none";
@@ -138,28 +137,17 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
      *
      * This is `true` by default.
      *
-     * Internally, this deactivates then activates the DistanceMeasurementsMouseControl when changed, which means that
-     * it will destroy any DistanceMeasurements currently under construction, and incurs some overhead, since it unbinds
-     * and rebinds various input handlers.
-     *
-     * @param {boolean} snapping Whether to enable snap-to-vertex and snap-edge for this DistanceMeasurementsMouseControl.
+     * @param snapping
      */
     set snapping(snapping) {
-        if (snapping !== this._snapping) {
-            this._snapping = snapping;
-            this.deactivate();
-            this.activate();
-        } else {
-            this._snapping = snapping;
-        }
+        this._snapping = snapping;
     }
 
     /**
      * Gets whether snap-to-vertex and snap-to-edge are enabled for this DistanceMeasurementsMouseControl.
      *
      * This is `true` by default.
-     *
-     * @returns {boolean} Whether snap-to-vertex and snap-to-edge are enabled for this DistanceMeasurementsMouseControl.
+     * @returns {*}
      */
     get snapping() {
         return this._snapping;
@@ -191,20 +179,31 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         let pointerDownCanvasX;
         let pointerDownCanvasY;
         const clickTolerance = 20;
+        let hoveredEntity = null;
 
         this._mouseState = MOUSE_FIRST_CLICK_EXPECTED;
 
-        this._onCameraControlHoverSnapOrSurface = cameraControl.on(
-            this._snapping
-                ? "hoverSnapOrSurface"
-                : "hoverSurface", event => {
+        const getTop = el => el.offsetTop + (el.offsetParent && (el.offsetParent !== canvas.parentNode) && getTop(el.offsetParent));
+        const getLeft = el => el.offsetLeft + (el.offsetParent && (el.offsetParent !== canvas.parentNode) && getLeft(el.offsetParent));
+
+        const pagePos = math.vec2();
+
+        const hoverOn = event => {
                 const canvasPos = event.snappedCanvasPos || event.canvasPos;
                 mouseHovering = true;
                 pointerWorldPos.set(event.worldPos);
                 pointerCanvasPos.set(event.canvasPos);
                 if (this._mouseState === MOUSE_FIRST_CLICK_EXPECTED) {
-                    this._markerDiv.style.marginLeft = `${canvasPos[0] - 5}px`;
-                    this._markerDiv.style.marginTop = `${canvasPos[1] - 5}px`;
+
+                    if (this._canvasToPagePos) {
+                        this._canvasToPagePos(canvas, canvasPos, pagePos);
+                        this._markerDiv.style.left = `${pagePos[0] - 5}px`;
+                        this._markerDiv.style.top = `${pagePos[1] - 5}px`;
+                    } else {
+                        this._markerDiv.style.left = `${getLeft(canvas) + canvasPos[0] - 5}px`;
+                        this._markerDiv.style.top = `${getTop(canvas) + canvasPos[1] - 5}px`;
+                    }
+
                     this._markerDiv.style.background = "pink";
                     if (event.snappedToVertex || event.snappedToEdge) {
                         if (this.pointerLens) {
@@ -218,16 +217,17 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                     } else {
                         if (this.pointerLens) {
                             this.pointerLens.visible = true;
-                            this.pointerLens.canvasPos =  event.canvasPos;
+                            this.pointerLens.canvasPos = event.canvasPos;
                             this.pointerLens.snappedCanvasPos = event.canvasPos;
                             this.pointerLens.snapped = false;
                         }
                         this._markerDiv.style.background = "pink";
                         this._markerDiv.style.border = "2px solid red";
                     }
+                    hoveredEntity = event.entity;
                 } else {
-                    this._markerDiv.style.marginLeft = `-10000px`;
-                    this._markerDiv.style.marginTop = `-10000px`;
+                    this._markerDiv.style.left = `-10000px`;
+                    this._markerDiv.style.top = `-10000px`;
                 }
                 canvas.style.cursor = "pointer";
                 if (this._currentDistanceMeasurement) {
@@ -238,10 +238,12 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                     this._currentDistanceMeasurement.zAxisVisible = this._currentDistanceMeasurementInitState.zAxisVisible && this.distanceMeasurementsPlugin.defaultZAxisVisible;
                     this._currentDistanceMeasurement.targetVisible = this._currentDistanceMeasurementInitState.targetVisible;
                     this._currentDistanceMeasurement.target.worldPos = pointerWorldPos.slice();
-                    this._markerDiv.style.marginLeft = `-10000px`;
-                    this._markerDiv.style.marginTop = `-10000px`;
+                    this._markerDiv.style.left = `-10000px`;
+                    this._markerDiv.style.top = `-10000px`;
                 }
-            });
+        };
+        this._onHoverSnapOrSurface = cameraControl.on("hoverSnapOrSurface", e => { if (this._snapping)   hoverOn(e); });
+        this._onHoverSurface       = cameraControl.on("hoverSurface",       e => { if (! this._snapping) hoverOn(e); });
 
         canvas.addEventListener('mousedown', this._onMouseDown = (e) => {
             if (e.which !== 1) {
@@ -251,7 +253,7 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
             pointerDownCanvasY = e.clientY;
         });
 
-        canvas.addEventListener("mouseup", this._onMouseUp =(e) => {
+        canvas.addEventListener("mouseup", this._onMouseUp = (e) => {
             if (e.which !== 1) {
                 return;
             }
@@ -263,6 +265,8 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
             }
             if (this._currentDistanceMeasurement) {
                 if (mouseHovering) {
+                    this._currentDistanceMeasurement.target.entity = hoveredEntity;
+                    hoveredEntity = null;
                     this._currentDistanceMeasurement.clickable = true;
                     this.distanceMeasurementsPlugin.fire("measurementEnd", this._currentDistanceMeasurement);
                     this._currentDistanceMeasurement = null;
@@ -270,16 +274,19 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                     this._currentDistanceMeasurement.destroy();
                     this.distanceMeasurementsPlugin.fire("measurementCancel", this._currentDistanceMeasurement);
                     this._currentDistanceMeasurement = null;
+                    hoveredEntity = null;
                 }
             } else {
                 if (mouseHovering) {
                     this._currentDistanceMeasurement = distanceMeasurementsPlugin.createMeasurement({
                         id: math.createUUID(),
                         origin: {
-                            worldPos: pointerWorldPos.slice()
+                            worldPos: pointerWorldPos.slice(),
+                            entity: hoveredEntity
                         },
                         target: {
-                            worldPos: pointerWorldPos.slice()
+                            worldPos: pointerWorldPos.slice(),
+                            entity: hoveredEntity
                         },
                         approximate: true
                     });
@@ -290,30 +297,31 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
                     this._currentDistanceMeasurementInitState.wireVisible = this._currentDistanceMeasurement.wireVisible;
                     this._currentDistanceMeasurementInitState.targetVisible = this._currentDistanceMeasurement.targetVisible;
                     this._currentDistanceMeasurement.clickable = false;
-                    this.fire("measurementStart", this._currentDistanceMeasurement);
+                    this._currentDistanceMeasurement.origin.entity = hoveredEntity;
+                    hoveredEntity = null;
+                    this.distanceMeasurementsPlugin.fire("measurementStart", this._currentDistanceMeasurement);
                 }
             }
         });
 
-        this._onCameraControlHoverSnapOrSurfaceOff = cameraControl.on(
-            this._snapping
-                ? "hoverSnapOrSurfaceOff"
-                : "hoverOff", event => {
-            if (this.pointerLens) {
-                this.pointerLens.visible = true;
-                this.pointerLens.canvasPos =  event.canvasPos;
-                this.pointerLens.snappedCanvasPos = event.snappedCanvasPos || event.canvasPos;
-            }
-            mouseHovering = false;
-            this._markerDiv.style.marginLeft = `-100px`;
-            this._markerDiv.style.marginTop = `-100px`;
-            if (this._currentDistanceMeasurement) {
-                this._currentDistanceMeasurement.wireVisible = false;
-                this._currentDistanceMeasurement.targetVisible = false;
-                this._currentDistanceMeasurement.axisVisible = false;
-            }
-            canvas.style.cursor = "default";
-        });
+        const hoverOff = event => {
+                if (this.pointerLens) {
+                    this.pointerLens.visible = true;
+                    this.pointerLens.canvasPos = event.canvasPos;
+                    this.pointerLens.snappedCanvasPos = event.snappedCanvasPos || event.canvasPos;
+                }
+                mouseHovering = false;
+                this._markerDiv.style.left = `-100px`;
+                this._markerDiv.style.top = `-100px`;
+                if (this._currentDistanceMeasurement) {
+                    this._currentDistanceMeasurement.wireVisible = false;
+                    this._currentDistanceMeasurement.targetVisible = false;
+                    this._currentDistanceMeasurement.axisVisible = false;
+                }
+                canvas.style.cursor = "default";
+        };
+        this._onHoverSnapOrSurfaceOff = cameraControl.on("hoverSnapOrSurfaceOff", e => { if (this._snapping)   hoverOff(e); });
+        this._onHoverOff              = cameraControl.on("hoverOff",              e => { if (! this._snapping) hoverOff(e); });
 
         this._active = true;
     }
@@ -333,21 +341,18 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
         if (this.pointerLens) {
             this.pointerLens.visible = false;
         }
-        if (this._markerDiv) {
-            this._destroyMarkerDiv()
-        }
+
         this.reset();
+
         const canvas = this.scene.canvas.canvas;
         canvas.removeEventListener("mousedown", this._onMouseDown);
         canvas.removeEventListener("mouseup", this._onMouseUp);
         const cameraControl = this.distanceMeasurementsPlugin.viewer.cameraControl;
-        cameraControl.off(this._onCameraControlHoverSnapOrSurface);
-        cameraControl.off(this._onCameraControlHoverSnapOrSurfaceOff);
-        if (this._currentDistanceMeasurement) {
-            this.distanceMeasurementsPlugin.fire("measurementCancel", this._currentDistanceMeasurement);
-            this._currentDistanceMeasurement.destroy();
-            this._currentDistanceMeasurement = null;
-        }
+        cameraControl.off(this._onHoverSnapOrSurface);
+        cameraControl.off(this._onHoverSurface);
+        cameraControl.off(this._onHoverSnapOrSurfaceOff);
+        cameraControl.off(this._onHoverOff);
+
         this._active = false;
     }
 
@@ -371,6 +376,17 @@ export class DistanceMeasurementsMouseControl extends DistanceMeasurementsContro
             this._currentDistanceMeasurement.destroy();
             this._currentDistanceMeasurement = null;
         }
+
+        this._mouseState = MOUSE_FIRST_CLICK_EXPECTED;
+    }
+
+    /**
+     * Gets the {@link DistanceMeasurement} under construction by this DistanceMeasurementsMouseControl, if any.
+     *
+     * @returns {null|DistanceMeasurement}
+     */
+    get currentMeasurement() {
+        return this._currentDistanceMeasurement;
     }
 
     /**

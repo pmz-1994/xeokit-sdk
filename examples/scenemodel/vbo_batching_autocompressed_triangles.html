@@ -38,11 +38,12 @@
 
 <script type="module">
 
-    import {Viewer, SceneModel} from "../../dist/xeokit-sdk.es.js";
+    import {Viewer, SceneModel} from "../../dist/xeokit-sdk.min.es.js";
 
     const viewer = new Viewer({
         canvasId: "myCanvas",
-        transparent: true
+        transparent: true,
+        edges: true
     });
 
     viewer.scene.camera.eye = [-21.80, 4.01, 6.56];

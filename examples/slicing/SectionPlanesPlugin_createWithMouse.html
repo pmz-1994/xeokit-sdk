@@ -60,7 +60,7 @@
     // Import the modules we need for this example
     //------------------------------------------------------------------------------------------------------------------
 
-    import {Viewer, XKTLoaderPlugin, SectionPlanesPlugin, math} from "../../dist/xeokit-sdk.es.js";
+    import {Viewer, XKTLoaderPlugin, SectionPlanesPlugin, math} from "../../dist/xeokit-sdk.min.es.js";
 
     //------------------------------------------------------------------------------------------------------------------
     // Create a Viewer
@@ -132,6 +132,12 @@
         });
 
         if (pickResult && pickResult.worldNormal) { // Disallow SectionPlanes on point clouds, because points don't have normals
+
+            if (pickResult.entity) {
+                if (!pickResult.entity.isObject) {
+                    return;
+                }
+            }
 
             const sectionPlane = sectionPlanes.createSectionPlane({
                 pos: pickResult.worldPos,

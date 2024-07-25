@@ -16,6 +16,7 @@ import {EmphasisMaterial} from '../materials/EmphasisMaterial.js';
 import {EdgeMaterial} from '../materials/EdgeMaterial.js';
 import {Metrics} from "../metriqs/Metriqs.js";
 import {SAO} from "../postfx/SAO.js";
+import {CrossSections} from "../postfx/CrossSections.js";
 import {PointsMaterial} from "../materials/PointsMaterial.js";
 import {LinesMaterial} from "../materials/LinesMaterial.js";
 
@@ -367,6 +368,8 @@ class Scene extends Component {
 
         this._aabbDirty = true;
 
+        this._readableGeometry = !!cfg.readableGeometryEnabled;
+
         /**
          * The {@link Viewer} this Scene belongs to.
          * @type {Viewer}
@@ -675,12 +678,12 @@ class Scene extends Component {
                 }
             };
 
-            this.setNumCachedSectionPlanes = function(numCachedSectionPlanes) {
+            this.setNumCachedSectionPlanes = function (numCachedSectionPlanes) {
                 this._numCachedSectionPlanes = numCachedSectionPlanes;
                 hash = null;
             }
 
-            this.getNumCachedSectionPlanes = function() {
+            this.getNumCachedSectionPlanes = function () {
                 return this._numCachedSectionPlanes;
             }
 
@@ -840,6 +843,14 @@ class Scene extends Component {
             enabled: cfg.saoEnabled
         });
 
+        /** Configures Cross Sections for this Scene.
+         * @type {CrossSections}
+         * @final
+         */
+        this.crossSections = new CrossSections(this, {
+
+        });
+
         this.ticksPerRender = cfg.ticksPerRender;
         this.ticksPerOcclusionTest = cfg.ticksPerOcclusionTest;
         this.passes = cfg.passes;
@@ -855,6 +866,7 @@ class Scene extends Component {
         this._pbrEnabled = !!cfg.pbrEnabled;
         this._colorTextureEnabled = (cfg.colorTextureEnabled !== false);
         this._dtxEnabled = !!cfg.dtxEnabled;
+        this._markerZOffset = cfg.markerZOffset;
 
         // Register Scene on xeokit
         // Do this BEFORE we add components below
@@ -1092,6 +1104,12 @@ class Scene extends Component {
         }
     }
 
+    _deRegisterVisibleObject(entity) {
+        delete this.visibleObjects[entity.id];
+        this._numVisibleObjects--;
+        this._visibleObjectIds = null; // Lazy regenerate
+    }
+
     _objectXRayedUpdated(entity, notify = true) {
         if (entity.xrayed) {
             if (ASSERT_OBJECT_STATE_UPDATE && this.xrayedObjects[entity.id]) {
@@ -1114,7 +1132,13 @@ class Scene extends Component {
         }
     }
 
-    _objectHighlightedUpdated(entity, notify = true) {
+    _deRegisterXRayedObject(entity) {
+        delete this.xrayedObjects[entity.id];
+        this._numXRayedObjects--;
+        this._xrayedObjectIds = null; // Lazy regenerate
+    }
+
+    _objectHighlightedUpdated(entity) {
         if (entity.highlighted) {
             if (ASSERT_OBJECT_STATE_UPDATE && this.highlightedObjects[entity.id]) {
                 console.error("Redundant object highlight update (highlighted=true)");
@@ -1131,9 +1155,12 @@ class Scene extends Component {
             this._numHighlightedObjects--;
         }
         this._highlightedObjectIds = null; // Lazy regenerate
-        if (notify) {
-            this.fire("objectHighlighted", entity, true);
-        }
+    }
+
+    _deRegisterHighlightedObject(entity) {
+        delete this.highlightedObjects[entity.id];
+        this._numHighlightedObjects--;
+        this._highlightedObjectIds = null; // Lazy regenerate
     }
 
     _objectSelectedUpdated(entity, notify = true) {
@@ -1158,6 +1185,13 @@ class Scene extends Component {
         }
     }
 
+    _deRegisterSelectedObject(entity) {
+        delete this.selectedObjects[entity.id];
+        this._numSelectedObjects--;
+        this._selectedObjectIds = null; // Lazy regenerate
+    }
+
+
     _objectColorizeUpdated(entity, colorized) {
         if (colorized) {
             this.colorizedObjects[entity.id] = entity;
@@ -1166,6 +1200,12 @@ class Scene extends Component {
             delete this.colorizedObjects[entity.id];
             this._numColorizedObjects--;
         }
+        this._colorizedObjectIds = null; // Lazy regenerate
+    }
+
+    _deRegisterColorizedObject(entity) {
+        delete this.colorizedObjects[entity.id];
+        this._numColorizedObjects--;
         this._colorizedObjectIds = null; // Lazy regenerate
     }
 
@@ -1180,6 +1220,12 @@ class Scene extends Component {
         this._opacityObjectIds = null; // Lazy regenerate
     }
 
+    _deRegisterOpacityObject(entity) {
+        delete this.opacityObjects[entity.id];
+        this._numOpacityObjects--;
+        this._opacityObjectIds = null; // Lazy regenerate
+    }
+
     _objectOffsetUpdated(entity, offset) {
         if (!offset || offset[0] === 0 && offset[1] === 0 && offset[2] === 0) {
             this.offsetObjects[entity.id] = entity;
@@ -1188,6 +1234,12 @@ class Scene extends Component {
             delete this.offsetObjects[entity.id];
             this._numOffsetObjects--;
         }
+        this._offsetObjectIds = null; // Lazy regenerate
+    }
+
+    _deRegisterOffsetObject(entity) {
+        delete this.offsetObjects[entity.id];
+        this._numOffsetObjects--;
         this._offsetObjectIds = null; // Lazy regenerate
     }
 
@@ -1242,18 +1294,27 @@ class Scene extends Component {
     }
 
     /**
-     * Whether precision surface picking is enabled.
+     * Whether geometry is readable.
      *
      * This is set via the {@link Viewer} constructor and is ````false```` by default.
      *
-     * The ````pickSurfacePrecision```` option for ````Scene#pick```` only works if this is set ````true````.
+     * The ````readableGeometryEnabled```` option for ````Scene#pick```` only works if this is set ````true````.
      *
      * Note that when ````true````, this configuration will increase the amount of browser memory used by the Viewer.
      *
-     * @returns {Boolean} True if precision picking is enabled.
+     * @returns {Boolean} True if geometry is readable.
+     */
+    get readableGeometryEnabled() {
+        return this._readableGeometry;
+    }
+
+    /**
+     * Whether precision surface picking is enabled.
+     * @deprecated
+     * @returns {*|boolean}
      */
     get pickSurfacePrecisionEnabled() {
-        return false; // Removed
+        return this._readableGeometry;
     }
 
     /**
@@ -1379,6 +1440,22 @@ class Scene extends Component {
     }
 
     /**
+     * Gets the Z value of offset for Marker's OcclusionTester.
+     * The closest the value is to 0.000 the more precise OcclusionTester will be, but at the same time the less
+     * precise it will behave for Markers that are located exactly on the Surface.
+     *
+     * Default is ````-0.001````.
+     *
+     * @returns {Number} Z offset for Marker
+     */
+    get markerZOffset() {
+        if (this._markerZOffset == null) {
+            return -0.001;
+        }
+        return this._markerZOffset;
+    }
+
+    /**
      * Performs an occlusion test on all {@link Marker}s in this {@link Scene}.
      *
      * Sets each {@link Marker#visible} ````true```` if the Marker is currently not occluded by any opaque {@link Entity}s
@@ -1457,6 +1534,18 @@ class Scene extends Component {
         }
 
         this._saveAmbientColor();
+    }
+
+
+    /**
+     * @private
+     */
+    compile() {
+        if (this._needRecompile) {
+            this._recompile();
+            this._renderer.imageDirty();
+            this._needRecompile = false;
+        }
     }
 
     _recompile() {
@@ -2021,10 +2110,10 @@ class Scene extends Component {
      */
     get center() {
         if (this._aabbDirty || !this._center) {
-            if (!this._center || !this._center) {
+            const aabb = this.aabb;
+            if (!this._center) {
                 this._center = math.vec3();
             }
-            const aabb = this.aabb;
             this._center[0] = (aabb[0] + aabb[3]) / 2;
             this._center[1] = (aabb[1] + aabb[4]) / 2;
             this._center[2] = (aabb[2] + aabb[5]) / 2;
@@ -2099,6 +2188,7 @@ class Scene extends Component {
             this._aabb[4] = ymax;
             this._aabb[5] = zmax;
             this._aabbDirty = false;
+            this._center = null;
         }
         return this._aabb;
     }
@@ -2205,17 +2295,15 @@ class Scene extends Component {
      *
      * @param {*} params Picking parameters.
      * @param {Boolean} [params.pickSurface=false] Whether to find the picked position on the surface of the Entity.
-     * @param {Boolean} [params.pickSurfacePrecision=false] When picking an Entity surface position, indicates whether or not we want full-precision {@link PickResult#worldPos}. Only works when {@link Scene#pickSurfacePrecisionEnabled} is ````true````. If pick succeeds, the returned {@link PickResult} will have {@link PickResult#precision} set ````true````, to indicate that it contains full-precision surface pick results.
+     * @param {Boolean} [params.pickSurfacePrecision=false] When picking an Entity surface position, indicates whether or not we want full-precision {@link PickResult#worldPos}. Only works when {@link Scene#readableGeometryEnabled} is ````true````. If pick succeeds, the returned {@link PickResult} will have {@link PickResult#precision} set ````true````, to indicate that it contains full-precision surface pick results.
      * @param {Boolean} [params.pickSurfaceNormal=false] Whether to find the picked normal on the surface of the Entity. Only works if ````pickSurface```` is given.
      * @param {Number[]} [params.canvasPos] Canvas-space coordinates. When ray-picking, this will override the **origin** and ** direction** parameters and will cause the ray to be fired through the canvas at this position, directly along the negative View-space Z-axis.
      * @param {Number[]} [params.origin] World-space ray origin when ray-picking. Ignored when canvasPos given.
      * @param {Number[]} [params.direction] World-space ray direction when ray-picking. Also indicates the length of the ray. Ignored when canvasPos given.
      * @param {Number[]} [params.matrix] 4x4 transformation matrix to define the World-space ray origin and direction, as an alternative to ````origin```` and ````direction````.
-     * @param {String[]} [params.includeEntities] IDs of {@link Entity}s to restrict picking to. When given, ignores {@link Entity}s whose IDs are not in this list.
-     * @param {String[]} [params.excludeEntities] IDs of {@link Entity}s to ignore. When given, will pick *through* these {@link Entity}s, as if they were not there.
-     * @param {Number} [params.snapRadius=30] The snap radius, in canvas pixels
-     * @param {boolean} [params.snapToVertex=true] Whether to snap to vertex.
-     * @param {boolean} [params.snapToEdge=true] Whether to snap to edge.
+     * @param {Number} [params.snapRadius=30] The snap radius, in canvas pixels.
+     * @param {boolean} [params.snapToVertex=true] Whether to snap to vertex. Only works when `canvasPos` given.
+     * @param {boolean} [params.snapToEdge=true] Whether to snap to edge. Only works when `canvasPos` given.
      * @param {PickResult} [pickResult] Holds the results of the pick attempt. Will use the Scene's singleton PickResult if you don't supply your own.
      * @returns {PickResult} Holds results of the pick attempt, returned when an {@link Entity} is picked, else null. See method comments for description.
      */
@@ -2251,13 +2339,7 @@ class Scene extends Component {
         }
 
         if (params.snapToEdge || params.snapToVertex) {
-            pickResult = this._renderer.snapPick(
-                params.canvasPos,
-                params.snapRadius || 30,
-                params.snapToVertex,
-                params.snapToEdge,
-                pickResult
-            );
+            pickResult = this._renderer.snapPick(params, pickResult);
         } else {
             pickResult = this._renderer.pick(params, pickResult);
         }
@@ -2273,7 +2355,7 @@ class Scene extends Component {
 
     /**
      * @param {Object} params Picking parameters.
-     * @param {Number[]} [params.canvasPos] Canvas-space coordinates. When ray-picking, this will override the **origin** and ** direction** parameters and will cause the ray to be fired through the canvas at this position, directly along the negative View-space Z-axis.
+     * @param {Number[]} params.canvasPos Canvas-space coordinates.
      * @param {Number} [params.snapRadius=30] The snap radius, in canvas pixels
      * @param {boolean} [params.snapToVertex=true] Whether to snap to vertex.
      * @param {boolean} [params.snapToEdge=true] Whether to snap to edge.
@@ -2284,12 +2366,11 @@ class Scene extends Component {
             this._warnSnapPickDeprecated = true;
             this.warn("Scene.snapPick() is deprecated since v2.4.2 - use Scene.pick() instead")
         }
-        return this._renderer.snapPick(
-            params.canvasPos,
-            params.snapRadius || 30,
-            params.snapToVertex,
-            params.snapToEdge,
-        );
+        if (!params.canvasPos) {
+            this.error("Scene.snapPick() canvasPos parameter expected");
+            return;
+        }
+        return this._renderer.snapPick(params);
     }
 
     /**

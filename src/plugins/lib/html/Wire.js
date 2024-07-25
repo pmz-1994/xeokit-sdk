@@ -1,3 +1,4 @@
+import { os } from "../../../viewer/utils/os.js";
 /** @private */
 class Wire {
 
@@ -95,11 +96,61 @@ class Wire {
             });
         }
 
-        if (cfg.onContextMenu) {
-            wireClickable.addEventListener('contextmenu', (event) => {
-                cfg.onContextMenu(event, this);
-                event.preventDefault();
+        if (cfg.onMouseDown) {
+            wireClickable.addEventListener('mousedown', (event) => {
+                cfg.onMouseDown(event, this);
             });
+        }
+
+        if (cfg.onMouseUp) {
+            wireClickable.addEventListener('mouseup', (event) => {
+                cfg.onMouseUp(event, this);
+            });
+        }
+
+        if (cfg.onMouseMove) {
+            wireClickable.addEventListener('mousemove', (event) => {
+                cfg.onMouseMove(event, this);
+            });
+        }
+
+        if (cfg.onContextMenu) {
+            if(os.isIphoneSafari()){
+                wireClickable.addEventListener('touchstart', (event) => {
+                    event.preventDefault();
+                    if(this._timeout){
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }
+                    this._timeout = setTimeout(() => {
+                        event.clientX = event.touches[0].clientX;
+                        event.clientY = event.touches[0].clientY;
+                        cfg.onContextMenu(event, this);
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }, 500);
+                })
+
+                wireClickable.addEventListener('touchend', (event) => {
+                    event.preventDefault();
+                    //stops short touches from calling the timeout
+                    if(this._timeout) {
+                        clearTimeout(this._timeout);
+                        this._timeout = null;
+                    }
+                } )
+
+            }
+            else {
+                wireClickable.addEventListener('contextmenu', (event) => {
+                    console.log(event);
+                    cfg.onContextMenu(event, this);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log("Label context menu")
+                });
+            }
+            
         }
 
         this._x1 = 0;
@@ -174,7 +225,7 @@ class Wire {
     }
 
     setClickable(clickable) {
-        this._wireClickable.style["pointer-events"] = (!!clickable) ? "all" : "none";
+        this._wireClickable.style["pointer-events"] = (clickable) ? "all" : "none";
     }
 
     setHighlighted(highlighted) {
